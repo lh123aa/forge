@@ -32,13 +32,26 @@ export const tools: Tool[] = [
   },
   {
     name: 'sca-resume',
-    description: '恢复之前中断的开发流程',
+    description: '恢复之前中断的开发流程，可传递用户响应（如确认/调整/跳过等）',
     inputSchema: {
       type: 'object',
       properties: {
         traceId: {
           type: 'string',
           description: '之前运行的追踪 ID',
+        },
+        userResponse: {
+          type: 'string',
+          enum: ['confirm', 'adjust', 'reclarify', 'confirm-start', 'skip'],
+          description: '通用用户响应：confirm=确认通过, adjust=需要调整, reclarify=重新澄清, confirm-start=开始执行, skip=跳过',
+        },
+        answer: {
+          type: 'string',
+          description: '答案/确认词（用于测试确认等场景，如：开始测试、调整计划、跳过测试）',
+        },
+        adjustmentNotes: {
+          type: 'string',
+          description: '调整说明（当需要调整时需要）',
         },
       },
       required: ['traceId'],

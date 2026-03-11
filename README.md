@@ -25,7 +25,7 @@ Complete closed-loop from requirement collection to code generation. Support mul
 
 ### 🔌 Skill Plugin System
 
-Extensible skill architecture with 30+ built-in skills. Create custom skills easily with the BaseSkill class.
+Extensible skill architecture with **45+ built-in skills**. Create custom skills easily with the BaseSkill class.
 
 ### 🧠 Self-Learning
 
@@ -50,6 +50,22 @@ Built-in test generation (unit, integration, acceptance). Code quality checks wi
 ### 🚀 MCP Integration
 
 Full MCP (Model Context Protocol) support. Works with OpenCode, Claude Desktop, and other MCP clients.
+
+### 🛡️ Quality Gate
+
+Automated quality checkpoints after code generation. Configurable lint, type-check, test, and security gates.
+
+### 📡 Interface Contract
+
+Auto-generate OpenAPI 3.0 interface definitions. Built-in Mock server support for Express, MSW, and JSON-Server.
+
+### 🚢 Deployment Support
+
+One-click deployment with build verification. Support for local, NPM, Docker, SSH, Vercel, and Netlify.
+
+### 👥 Team Collaboration
+
+Task assignment and decomposition. Code review automation with security, best-practices, and performance checks.
 
 ---
 
@@ -156,12 +172,16 @@ const result = await agent.start({
 | Skill              | Description                     |
 | ------------------ | ------------------------------- |
 | `generate-code`    | Generate code from requirements |
+| `generate-interface` | Generate OpenAPI 3.0 interface |
 | `generate-test`    | Generate test code              |
 | `unit-test`        | Unit test generation            |
 | `integration-test` | Integration test generation     |
 | `acceptance-test`  | Acceptance test generation      |
 | `lint`             | Code linting                    |
 | `type-check`       | TypeScript type checking        |
+| `build-check`      | Build verification              |
+| `error-fix`        | Auto-fix code errors            |
+| `test-result-analyzer` | Analyze test failures        |
 
 ### Requirement Analysis
 
@@ -170,6 +190,28 @@ const result = await agent.start({
 | `analyze-demand` | Requirement analysis     |
 | `demand-collect` | Requirement collection   |
 | `demand-confirm` | Requirement confirmation |
+| `demand-clarify` | Requirement clarification |
+| `smart-analysis` | Smart analysis with knowledge base |
+
+### Task Planning
+
+| Skill            | Description              |
+| ---------------- | ------------------------ |
+| `task-decompose` | Decompose requirements  |
+| `task-plan`      | Generate execution plan |
+| `task-confirm`   | Confirm task plan        |
+| `task-assign`    | Assign tasks to team     |
+
+### Testing & Quality
+
+| Skill              | Description                     |
+| ------------------ | ------------------------------- |
+| `test-orchestrator`| Test orchestration              |
+| `test-plan`       | Generate test plan             |
+| `test-confirm`    | Confirm test plan              |
+| `quality-scorer`  | Calculate quality score         |
+| `test-fix-loop`  | Test-fix iteration             |
+| `code-review`     | Code review automation          |
 
 ### Utilities
 
@@ -180,6 +222,11 @@ const result = await agent.start({
 | `format-code` | Code formatting    |
 | `retry`       | Retry on failure   |
 | `parallel`    | Parallel execution |
+| `branch`      | Conditional branch |
+| `wait`        | Wait/sleep         |
+| `mock-server` | Mock server        |
+| `version-manager` | Version management |
+| `deploy`      | Deployment         |
 
 ---
 
@@ -340,6 +387,19 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ---
 
 ## 📋 Changelog
+
+### v1.1.0 (2026-03-12)
+
+- ✅ **Interface Contract Module**: Generate OpenAPI 3.0 interface definitions
+- ✅ **Mock Server Support**: Built-in Mock server for Express, MSW, JSON-Server
+- ✅ **Quality Gate Automation**: Configurable quality checkpoints after code generation
+- ✅ **Build Verification**: Build check skill for pre-deployment validation
+- ✅ **Version Management**: Semantic versioning with bump and tag support
+- ✅ **Deployment Support**: One-click deploy to local, NPM, Docker, SSH, Vercel, Netlify
+- ✅ **Task Assignment**: Decompose and assign tasks to team members
+- ✅ **Code Review**: Automated code review with security, best-practices, performance checks
+- ✅ **Collaboration Storage**: Extended SQLite storage for team collaboration
+- ✅ **45+ Built-in Skills**: Increased from 30+ skills
 
 ### v1.0.0 (2026-02-22)
 

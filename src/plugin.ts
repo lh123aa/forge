@@ -23,6 +23,7 @@ import writeFileSkill from './skills/atoms/io/write-file.js';
 import listDirSkill from './skills/atoms/io/list-dir.js';
 import analyzeDemandSkill from './skills/atoms/analyze/demand.js';
 import generateCodeSkill from './skills/atoms/generate/code.js';
+import generateInterfaceSkill from './skills/atoms/generate/interface.js';
 import generateTestSkill from './skills/atoms/generate/test.js';
 import errorFixSkill from './skills/atoms/generate/error-fix.js';
 import unitTestSkill from './skills/atoms/generate/unit-test.js';
@@ -31,6 +32,7 @@ import acceptanceTestSkill from './skills/atoms/generate/acceptance-test.js';
 import testResultAnalyzerSkill from './skills/atoms/generate/test-result-analyzer.js';
 import lintSkill from './skills/atoms/generate/lint.js';
 import typeCheckSkill from './skills/atoms/generate/type-check.js';
+import buildCheckSkill from './skills/atoms/generate/build-check.js';
 import formatCodeSkill from './skills/atoms/format/code.js';
 import codeFormatSkill from './skills/atoms/format/code-standardize.js';
 import prettierFormatSkill from './skills/atoms/format/prettier-format.js';
@@ -41,6 +43,9 @@ import waitSkill from './skills/atoms/utility/wait.js';
 import retrySkill from './skills/atoms/utility/retry.js';
 import branchSkill from './skills/atoms/utility/branch.js';
 import parallelSkill from './skills/atoms/utility/parallel.js';
+import mockServerSkill from './skills/atoms/utility/mock-server.js';
+import versionManagerSkill from './skills/atoms/utility/version-manager.js';
+import deploySkill from './skills/atoms/utility/deploy.js';
 
 // 导入组合 Skills（实例）
 import demandCollectSkill from './skills/workflows/demand-collect.js';
@@ -60,6 +65,10 @@ import testPlanSkill from './skills/workflows/test-plan.js';
 import testConfirmSkill from './skills/workflows/test-confirm.js';
 import qualityScorerSkill from './skills/workflows/quality-scorer.js';
 import testFixLoopSkill from './skills/workflows/test-fix-loop.js';
+
+// 导入团队协作相关 Skills
+import taskAssignSkill from './skills/workflows/task-assign.js';
+import codeReviewSkill from './skills/workflows/code-review.js';
 
 // 导入工作流
 import { 
@@ -158,13 +167,25 @@ export class SmartCodeAgent {
    * 注册内置工作流
    */
   private registerWorkflows(): void {
-    this.workflows.set('transparent-development', transparentDevelopmentWorkflow);
-    this.workflows.set('demand-only', demandOnlyWorkflow);
-    this.workflows.set('task-planning', taskPlanningWorkflow);
-    this.workflows.set('full-demand-analysis', fullDemandAnalysisWorkflow);
-    this.workflows.set('demand-collection', demandCollectionWorkflow);
-    this.workflows.set('full-code-generation', fullCodeGenerationWorkflow);
-    this.workflows.set('test-driven-development', testDrivenDevelopmentWorkflow);
+    const workflows = [
+      transparentDevelopmentWorkflow,
+      demandOnlyWorkflow,
+      taskPlanningWorkflow,
+      fullDemandAnalysisWorkflow,
+      demandCollectionWorkflow,
+      fullCodeGenerationWorkflow,
+      testDrivenDevelopmentWorkflow,
+    ];
+
+    // 注册到 workflowExecutor（用于 resume 恢复执行）
+    workflows.forEach(workflow => {
+      this.workflowExecutor.registerWorkflow(workflow);
+    });
+
+    // 注册到本地 Map
+    workflows.forEach(workflow => {
+      this.workflows.set(workflow.name, workflow);
+    });
   }
 
   /**
@@ -206,6 +227,7 @@ export class SmartCodeAgent {
       
       // Generate 类
       generateCodeSkill,
+      generateInterfaceSkill,
       generateTestSkill,
       errorFixSkill,
       unitTestSkill,
@@ -214,17 +236,12 @@ export class SmartCodeAgent {
       testResultAnalyzerSkill,
       lintSkill,
       typeCheckSkill,
+      buildCheckSkill,
       
       // Format 类
       formatCodeSkill,
       codeFormatSkill,
       prettierFormatSkill,
-      
-      // IO 类
-      readFileSkill,
-      writeFileSkill,
-      listDirSkill,
-      fileIOSkill,
       
       // Observe 类
       observeRecordSkill,
@@ -235,6 +252,9 @@ export class SmartCodeAgent {
       retrySkill,
       branchSkill,
       parallelSkill,
+      mockServerSkill,
+      versionManagerSkill,
+      deploySkill,
     ];
 
     // 注册组合 Skills（使用导入的实例）
@@ -257,6 +277,10 @@ export class SmartCodeAgent {
       testConfirmSkill,
       qualityScorerSkill,
       testFixLoopSkill,
+      
+      // 团队协作 Skills
+      taskAssignSkill,
+      codeReviewSkill,
     ];
 
     // 批量注册
@@ -388,8 +412,25 @@ export class SmartCodeAgent {
 
   /**
    * 恢复中断的流程
+   * @param traceId 追踪 ID
+   * @param userResponse 用户响应（confirm/调整/重新澄清）
+   * @param userResponse 通用用户响应（confirm/adjust/reclarify等）
+   * @param answer 答案（用于测试确认等场景）
+   * @param adjustmentNotes 调整说明
    */
-  async resume(traceId: string): Promise<RunResult> {
+  async resume(traceId: string, userResponse?: string, answer?: string, adjustmentNotes?: string): Promise<RunResult> {
+    // 构建用户输入
+    const userInput: Record<string, unknown> = {};
+    if (userResponse) {
+      userInput.userResponse = userResponse;
+    }
+    if (answer) {
+      userInput.answer = answer;
+    }
+    if (adjustmentNotes) {
+      userInput.adjustmentNotes = adjustmentNotes;
+    }
+
     const execution = await this.workflowStateManager.load(traceId);
     
     if (!execution) {
@@ -401,13 +442,23 @@ export class SmartCodeAgent {
       };
     }
 
-    const result = await this.workflowExecutor.resume(traceId);
+    // 如果有用户输入，先继续执行（传递用户响应）
+    let result;
+    if (Object.keys(userInput).length > 0) {
+      result = await this.workflowExecutor.continue(traceId, userInput);
+      // continue 成功后，需要再次 resume 继续执行
+      if (result.code === 200) {
+        result = await this.workflowExecutor.resume(traceId);
+      }
+    } else {
+      result = await this.workflowExecutor.resume(traceId);
+    }
 
     return {
       traceId,
-      status: result.code === 200 ? 'success' : 'failed',
+      status: result.code === 200 ? 'success' : result.code === 300 ? 'partial' : 'failed',
       output: result.data,
-      errors: result.code !== 200 ? [result.message] : undefined,
+      errors: result.code >= 400 ? [result.message] : undefined,
     };
   }
 

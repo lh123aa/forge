@@ -15,12 +15,16 @@ Smart Code Agent 是一个智能代码生成 MCP (Model Context Protocol) 插件
 ### 核心特性
 
 - 🎯 **需求驱动开发** - 从需求采集到代码生成的完整闭环
-- 🔌 **Skill 插件化** - 可扩展的技能系统，支持自定义 Skill
+- 🔌 **Skill 插件化** - 可扩展的技能系统，支持自定义 Skill（45+ 内置 Skills）
 - 🧠 **自我学习** - 本地知识库，持续积累开发经验
 - 📊 **观察者模式** - 全程记录运行数据，持续优化
 - 💾 **多种存储** - 支持文件系统存储和 SQLite 数据库
- 🧪 **完整测试** - 内置测试生成和代码质量检查
- 🔄 **自动升级** - 检测 GitHub 更新，一键自动升级
+- 🧪 **完整测试** - 内置测试生成和代码质量检查
+- 🔄 **自动升级** - 检测 GitHub 更新，一键自动升级
+- 🛡️ **质量门禁** - 代码生成后自动质量检查
+- 📡 **接口契约** - 自动生成 OpenAPI 3.0 接口定义
+- 🚢 **部署支持** - 一键部署到多种平台
+- 👥 **团队协作** - 任务分配与代码评审
 
 ### 架构概览
 
@@ -179,6 +183,7 @@ sca version
 | Skill | 描述 |
 |-------|------|
 | `generate-code` | 根据需求生成代码 |
+| `generate-interface` | 生成 OpenAPI 3.0 接口定义 |
 | `generate-test` | 生成测试代码 |
 | `error-fix` | 自动修复错误 |
 | `unit-test` | 单元测试生成 |
@@ -186,6 +191,8 @@ sca version
 | `acceptance-test` | 验收测试生成 |
 | `lint` | 代码检查 |
 | `type-check` | 类型检查 |
+| `build-check` | 构建检查 |
+| `test-result-analyzer` | 测试结果分析 |
 
 ### 需求分析
 | Skill | 描述 |
@@ -193,6 +200,26 @@ sca version
 | `analyze-demand` | 需求分析 |
 | `demand-collect` | 需求采集 |
 | `demand-confirm` | 需求确认 |
+| `demand-clarify` | 需求澄清 |
+| `smart-analysis` | 智能分析 |
+
+### 任务规划
+| Skill | 描述 |
+|-------|------|
+| `task-decompose` | 任务拆解 |
+| `task-plan` | 生成执行计划 |
+| `task-confirm` | 确认执行计划 |
+| `task-assign` | 任务分配 |
+
+### 测试与质量
+| Skill | 描述 |
+|-------|------|
+| `test-orchestrator` | 测试编排 |
+| `test-plan` | 生成测试计划 |
+| `test-confirm` | 确认测试计划 |
+| `quality-scorer` | 质量评分 |
+| `test-fix-loop` | 测试修复循环 |
+| `code-review` | 代码评审 |
 
 ### 格式转换
 | Skill | 描述 |
@@ -214,6 +241,9 @@ sca version
 | `branch` | 条件分支 |
 | `parallel` | 并行执行 |
 | `list-templates` | 列出代码模板 |
+| `mock-server` | Mock 服务器 |
+| `version-manager` | 版本管理 |
+| `deploy` | 部署 |
 
 ## 代码模板
 
@@ -568,6 +598,19 @@ A: 支持 MCP 协议的 IDE 均可使用，如：
 5. 创建 Pull Request
 
 ## 更新日志
+
+### v1.1.0 (2026-03-12)
+
+- ✅ **接口契约模块** - 自动生成 OpenAPI 3.0 接口定义文档
+- ✅ **Mock 服务器** - 内置 Mock 服务支持 Express、MSW、JSON-Server
+- ✅ **质量门禁自动化** - 代码生成后自动质量检查
+- ✅ **构建检查** - 部署前构建验证
+- ✅ **版本管理** - 语义化版本支持
+- ✅ **部署支持** - 一键部署到本地、NPM、Docker、SSH、Vercel、Netlify
+- ✅ **任务分配** - 需求拆解与团队任务分配
+- ✅ **代码评审** - 自动化代码评审（安全、最佳实践、性能检查）
+- ✅ **协作存储** - 扩展 SQLite 支持团队协作
+- ✅ **45+ 内置 Skills** - 从 30+ 增加到 45+
 
 ### v1.0.0 (2026-02-22)
 

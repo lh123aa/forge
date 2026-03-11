@@ -80,7 +80,12 @@ export class MCPServer {
         }
 
         case 'sca-resume': {
-          const result = await this.agent.resume(args.traceId as string);
+          const result = await this.agent.resume(
+            args.traceId as string,
+            args.userResponse as string | undefined,
+            args.answer as string | undefined,
+            args.adjustmentNotes as string | undefined
+          );
           return {
             content: [{
               type: 'text',

@@ -6,6 +6,7 @@ import { SkillRegistry } from './registry.js';
 import { SkillExecutor } from './executor.js';
 import { WorkflowParser } from './parser.js';
 import { WorkflowStateManager } from './state.js';
+import { QualityGate, type GateCheckpoint, type GateSummary } from './quality-gate.js';
 
 const logger = createLogger('WorkflowExecutor');
 
@@ -43,6 +44,10 @@ export interface WorkflowExecutorOptions {
   stateManager?: WorkflowStateManager;
   /** 进度回调 */
   onProgress?: (args: ProgressCallbackArgs) => void;
+  /** 启用质量门禁 */
+  enableQualityGate?: boolean;
+  /** 质量门禁检查点 */
+  gateCheckpoints?: GateCheckpoint[];
 }
 
 /**
@@ -63,6 +68,10 @@ export class WorkflowExecutor {
   private parser: WorkflowParser;
   private stateManager: WorkflowStateManager;
   private options: WorkflowExecutorOptions & { onProgress?: (args: ProgressCallbackArgs) => void };
+  // 保存工作流定义，用于 resume 时恢复执行
+  private workflows: Map<string, Workflow> = new Map();
+  // 质量门禁
+  private qualityGate: QualityGate | null = null;
 
   constructor(
     registry: SkillRegistry,
@@ -74,6 +83,25 @@ export class WorkflowExecutor {
     this.parser = new WorkflowParser();
     this.options = { ...defaultOptions, ...options };
     this.stateManager = options?.stateManager || new WorkflowStateManager();
+    
+    // 初始化质量门禁
+    if (this.options.enableQualityGate) {
+      this.qualityGate = new QualityGate(registry, executor);
+      // 添加自定义检查点
+      if (this.options.gateCheckpoints) {
+        for (const checkpoint of this.options.gateCheckpoints) {
+          this.qualityGate.addCheckpoint(checkpoint);
+        }
+      }
+      logger.info('Quality gate enabled');
+    }
+  }
+
+  /**
+   * 注册工作流
+   */
+  registerWorkflow(workflow: Workflow): void {
+    this.workflows.set(workflow.name, workflow);
   }
 
   /**
@@ -83,6 +111,9 @@ export class WorkflowExecutor {
     workflow: Workflow,
     input: SkillInput
   ): Promise<SkillOutput> {
+    // 注册工作流
+    this.registerWorkflow(workflow);
+
     const execution: WorkflowExecution = {
       workflowName: workflow.name,
       traceId: input.traceId,
@@ -142,6 +173,45 @@ export class WorkflowExecutor {
           });
 
           execution.stepsExecuted.push(currentStepName);
+
+          // 质量门禁检查（仅在 skill 成功时检查）
+          if (this.qualityGate && result.code === 200) {
+            const gateResult = await this.qualityGate.check(currentStepName, result, stepInput);
+            if (!gateResult.passed) {
+              logger.warn(`Quality gate failed at step: ${currentStepName}`, {
+                traceId: input.traceId,
+                failedChecks: gateResult.failedChecks,
+              });
+              
+              // 触发进度回调 - 门禁失败
+              this.notifyProgress({
+                stepName: currentStepName,
+                stepIndex,
+                totalSteps,
+                status: 'failed',
+                output: result,
+                message: `质量门禁未通过: ${gateResult.failedChecks.map(c => c.name).join(', ')}`,
+                timestamp: Date.now(),
+              });
+              
+              // 门禁失败，停止工作流或执行失败分支
+              if (step.onFail) {
+                currentStepName = step.onFail;
+              } else {
+                return {
+                  code: 400,
+                  data: {
+                    execution,
+                    gateResult,
+                  },
+                  message: `质量门禁未通过: ${gateResult.failedChecks.map(c => c.name).join(', ')}`,
+                };
+              }
+              
+              stepIndex++;
+              continue;
+            }
+          }
 
           // 处理结果
           if (result.code === 200) {
@@ -291,6 +361,7 @@ export class WorkflowExecutor {
 
   /**
    * 继续执行（提供用户输入后）
+   * 将用户输入保存到执行上下文，准备恢复执行
    */
   async continue(
     traceId: string,
@@ -314,25 +385,32 @@ export class WorkflowExecutor {
     }
 
     // 将用户输入添加到上下文
-    execution.context.userInput = userInput;
+    execution.context = {
+      ...execution.context,
+      ...userInput,
+    };
     execution.status = 'running';
 
-    logger.info(`Continuing workflow: ${execution.workflowName}`, { traceId });
+    // 保存更新后的状态
+    await this.stateManager.save(execution);
 
-    // 返回需要重新执行的信息
+    logger.info(`Continuing workflow: ${execution.workflowName}`, { traceId, userInput });
+
+    // 返回确认信息
     return {
       code: 200,
       data: {
         execution,
         userInput,
-        message: 'Ready to continue with user input',
+        message: 'User input saved, ready to resume',
       },
-      message: 'Workflow ready to continue',
+      message: 'User input saved, ready to resume',
     };
   }
 
   /**
    * 从保存的状态恢复执行
+   * 找到当前暂停的步骤，用保存的上下文重新执行
    */
   async resume(traceId: string, _additionalInput?: Partial<SkillInput>): Promise<SkillOutput> {
     const execution = await this.stateManager.load(traceId);
@@ -352,12 +430,251 @@ export class WorkflowExecutor {
       };
     }
 
-    logger.info(`Resuming workflow: ${execution.workflowName}`, { traceId });
+    // 获取工作流定义
+    const workflow = this.workflows.get(execution.workflowName);
+    if (!workflow) {
+      return {
+        code: 500,
+        data: {},
+        message: `Workflow not found: ${execution.workflowName}`,
+      };
+    }
+
+    // 找到当前暂停的步骤
+    const currentStepName = execution.currentStep;
+    const step = workflow.steps.find(s => s.skill === currentStepName);
+    if (!step) {
+      return {
+        code: 500,
+        data: {},
+        message: `Step not found: ${currentStepName}`,
+      };
+    }
+
+    logger.info(`Resuming workflow step: ${currentStepName}`, { traceId });
+
+    try {
+      // 构建步骤输入，将保存的上下文传递给 skill
+      const stepInput: SkillInput = {
+        config: {},
+        context: {
+          readOnly: execution.context as SkillInput['context']['readOnly'],
+          writable: execution.context as SkillInput['context']['writable'],
+        },
+        task: {
+          taskId: traceId,
+          taskName: currentStepName,
+          target: currentStepName,
+          params: {
+            // 合并步骤参数和保存的用户输入
+            ...step.params,
+            // 用户输入优先
+            ...(execution.context.userInput as Record<string, unknown>),
+          },
+          timeout: this.options.defaultTimeout || 60000,
+          maxRetry: step.retry || 3,
+        },
+        snapshotPath: `snapshots/${traceId}`,
+        traceId,
+      };
+
+      // 执行当前步骤
+      const result = await this.executor.execute(step.skill, stepInput, {
+        timeout: this.options.defaultTimeout,
+        maxRetries: step.retry,
+      });
+
+      // 处理结果
+      if (result.code === 200) {
+        // 成功，流转到下一步
+        const nextStepName = step.onSuccess;
+        execution.currentStep = nextStepName || 'completed';
+        execution.stepsExecuted.push(currentStepName);
+
+        // 更新上下文
+        if (result.data) {
+          execution.context = {
+            ...execution.context,
+            ...result.data,
+          };
+        }
+
+        if (nextStepName) {
+          // 继续执行下一步
+          execution.status = 'running';
+          await this.stateManager.save(execution);
+          return await this.resumeFromStep(traceId, workflow, execution, nextStepName);
+        } else {
+          // 工作流完成
+          execution.status = 'success';
+          execution.endTime = Date.now();
+          await this.stateManager.save(execution);
+
+          return {
+            code: 200,
+            data: { execution },
+            message: `Workflow "${workflow.name}" completed successfully`,
+          };
+        }
+      } else if (result.code === 300) {
+        // 再次需要用户输入
+        execution.status = 'paused';
+        await this.stateManager.save(execution);
+
+        return {
+          code: 300,
+          data: {
+            execution,
+            result,
+            waitForInput: true,
+            currentStep: currentStepName,
+            inputPrompt: result.data,
+          },
+          message: `Workflow paused at step "${currentStepName}": ${result.message}`,
+        };
+      } else if (result.code === 400) {
+        // 可重试失败
+        const failStepName = step.onFail;
+        if (failStepName) {
+          execution.currentStep = failStepName;
+          execution.status = 'running';
+          await this.stateManager.save(execution);
+          return await this.resumeFromStep(traceId, workflow, execution, failStepName);
+        }
+        execution.status = 'failed';
+        execution.error = result.message;
+        await this.stateManager.save(execution);
+        return result;
+      } else {
+        // 不可重试失败
+        execution.status = 'failed';
+        execution.error = result.message;
+        await this.stateManager.save(execution);
+        return result;
+      }
+    } catch (error) {
+      logger.error(`Error resuming workflow step: ${currentStepName}`, { error, traceId });
+      execution.status = 'failed';
+      execution.error = error instanceof Error ? error.message : String(error);
+      await this.stateManager.save(execution);
+      return {
+        code: 500,
+        data: { execution },
+        message: `Error: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
+  /**
+   * 从指定步骤继续执行工作流
+   */
+  private async resumeFromStep(
+    traceId: string,
+    workflow: Workflow,
+    execution: WorkflowExecution,
+    startStep: string
+  ): Promise<SkillOutput> {
+    let currentStepName: string | null = startStep;
+
+    while (currentStepName) {
+      const step = workflow.steps.find(s => s.skill === currentStepName);
+      if (!step) {
+        return {
+          code: 500,
+          data: { execution },
+          message: `Step not found: ${currentStepName}`,
+        };
+      }
+
+      execution.currentStep = currentStepName;
+
+      try {
+        // 构建步骤输入
+        const stepInput: SkillInput = {
+          config: {},
+          context: {
+            readOnly: execution.context as SkillInput['context']['readOnly'],
+            writable: execution.context as SkillInput['context']['writable'],
+          },
+          task: {
+            taskId: traceId,
+            taskName: currentStepName,
+            target: currentStepName,
+            params: step.params || {},
+            timeout: this.options.defaultTimeout || 60000,
+            maxRetry: step.retry || 3,
+          },
+          snapshotPath: `snapshots/${traceId}`,
+          traceId,
+        };
+
+        // 执行 Skill
+        const result = await this.executor.execute(step.skill, stepInput, {
+          timeout: this.options.defaultTimeout,
+          maxRetries: step.retry,
+        });
+
+        execution.stepsExecuted.push(currentStepName);
+
+        // 处理结果
+        if (result.code === 200) {
+          currentStepName = step.onSuccess ?? null;
+          if (result.data) {
+            execution.context = { ...execution.context, ...result.data };
+          }
+        } else if (result.code === 300) {
+          // 需要用户输入，暂停
+          execution.status = 'paused';
+          await this.stateManager.save(execution);
+          return {
+            code: 300,
+            data: {
+              execution,
+              result,
+              waitForInput: true,
+              currentStep: currentStepName,
+              inputPrompt: result.data,
+            },
+            message: `Workflow paused at step "${currentStepName}": ${result.message}`,
+          };
+        } else if (result.code === 400) {
+          currentStepName = step.onFail ?? null;
+        } else {
+          execution.status = 'failed';
+          execution.error = result.message;
+          await this.stateManager.save(execution);
+          return result;
+        }
+
+        // 保存状态
+        await this.stateManager.save(execution);
+
+      } catch (error) {
+        logger.error(`Error in workflow step: ${currentStepName}`, { error, traceId });
+        if (step.onFail) {
+          currentStepName = step.onFail;
+        } else {
+          execution.status = 'failed';
+          execution.error = error instanceof Error ? error.message : String(error);
+          await this.stateManager.save(execution);
+          return {
+            code: 500,
+            data: { execution },
+            message: `Error: ${error instanceof Error ? error.message : String(error)}`,
+          };
+        }
+      }
+    }
+
+    // 工作流完成
+    execution.status = 'success';
+    execution.endTime = Date.now();
+    await this.stateManager.save(execution);
 
     return {
       code: 200,
       data: { execution },
-      message: 'Workflow resumed',
+      message: `Workflow "${workflow.name}" completed successfully`,
     };
   }
 

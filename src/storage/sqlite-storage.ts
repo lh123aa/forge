@@ -108,6 +108,88 @@ export class SQLiteStorage {
 
     // 索引
     this.db.run(`CREATE INDEX IF NOT EXISTS idx_data_type ON data_store(type)`);
+
+    // ===== 协作状态相关表 =====
+
+    // 团队成员表
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS team_members (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        role TEXT DEFAULT 'developer',
+        status TEXT DEFAULT 'offline',
+        last_active INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    `);
+
+    // 任务表
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS collaboration_tasks (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        status TEXT DEFAULT 'pending',
+        assignee TEXT,
+        priority TEXT DEFAULT 'medium',
+        dependencies TEXT,
+        estimated_hours REAL,
+        actual_hours REAL,
+        created_by TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        completed_at INTEGER
+      )
+    `);
+
+    // 任务状态变更历史
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS task_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id TEXT NOT NULL,
+        field TEXT NOT NULL,
+        old_value TEXT,
+        new_value TEXT,
+        changed_by TEXT,
+        changed_at INTEGER NOT NULL
+      )
+    `);
+
+    // 评审记录表
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS code_reviews (
+        id TEXT PRIMARY KEY,
+        pr_url TEXT,
+        status TEXT DEFAULT 'pending',
+        author TEXT,
+        reviewers TEXT,
+        issues_count INTEGER DEFAULT 0,
+        passed INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        completed_at INTEGER
+      )
+    `);
+
+    // 协作事件表（用于状态同步）
+    this.db.run(`
+      CREATE TABLE IF NOT EXISTS collaboration_events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_type TEXT NOT NULL,
+        entity_type TEXT NOT NULL,
+        entity_id TEXT NOT NULL,
+        payload TEXT,
+        actor TEXT,
+        created_at INTEGER NOT NULL
+      )
+    `);
+
+    // 创建协作相关索引
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_status ON collaboration_tasks(status)`);
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON collaboration_tasks(assignee)`);
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_reviews_status ON code_reviews(status)`);
+    this.db.run(`CREATE INDEX IF NOT EXISTS idx_events_entity ON collaboration_events(entity_type, entity_id)`);
   }
 
   /**
@@ -350,6 +432,285 @@ export class SQLiteStorage {
       initialized: this.initialized,
       autoSave: this.autoSave,
     };
+  }
+
+  // ========== 协作状态操作 ==========
+
+  /**
+   * 添加团队成员
+   */
+  async addTeamMember(id: string, name: string, role: string = 'developer'): Promise<void> {
+    const db = this.ensureDb();
+    const now = Date.now();
+    db.run(
+      `INSERT OR REPLACE INTO team_members (id, name, role, status, last_active, created_at, updated_at) 
+       VALUES (?, ?, ?, 'offline', ?, ?, ?)`,
+      [id, name, role, now, now, now]
+    );
+  }
+
+  /**
+   * 获取团队成员列表
+   */
+  async getTeamMembers(): Promise<Array<{ id: string; name: string; role: string; status: string; lastActive: number }>> {
+    const db = this.ensureDb();
+    const result = db.exec(`SELECT id, name, role, status, last_active FROM team_members`);
+    
+    if (result.length === 0) return [];
+    
+    return result[0].values.map(row => ({
+      id: row[0] as string,
+      name: row[1] as string,
+      role: row[2] as string,
+      status: row[3] as string,
+      lastActive: row[4] as number,
+    }));
+  }
+
+  /**
+   * 更新成员状态
+   */
+  async updateMemberStatus(id: string, status: string): Promise<void> {
+    const db = this.ensureDb();
+    const now = Date.now();
+    db.run(
+      `UPDATE team_members SET status = ?, last_active = ?, updated_at = ? WHERE id = ?`,
+      [status, now, now, id]
+    );
+  }
+
+  /**
+   * 保存任务
+   */
+  async saveTask(task: {
+    id: string;
+    name: string;
+    description?: string;
+    status?: string;
+    assignee?: string;
+    priority?: string;
+    dependencies?: string[];
+    estimatedHours?: number;
+    createdBy?: string;
+  }): Promise<void> {
+    const db = this.ensureDb();
+    const now = Date.now();
+    const deps = task.dependencies ? JSON.stringify(task.dependencies) : '[]';
+    
+    db.run(
+      `INSERT OR REPLACE INTO collaboration_tasks 
+       (id, name, description, status, assignee, priority, dependencies, estimated_hours, created_by, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        task.id,
+        task.name,
+        task.description || '',
+        task.status || 'pending',
+        task.assignee || '',
+        task.priority || 'medium',
+        deps,
+        task.estimatedHours || 0,
+        task.createdBy || '',
+        now,
+        now
+      ]
+    );
+  }
+
+  /**
+   * 获取任务列表
+   */
+  async getTasks(filters?: { status?: string; assignee?: string }): Promise<Array<{
+    id: string;
+    name: string;
+    description: string;
+    status: string;
+    assignee: string;
+    priority: string;
+    dependencies: string[];
+    estimatedHours: number;
+  }>> {
+    const db = this.ensureDb();
+    let sql = `SELECT id, name, description, status, assignee, priority, dependencies, estimated_hours 
+               FROM collaboration_tasks WHERE 1=1`;
+    const params: string[] = [];
+
+    if (filters?.status) {
+      sql += ` AND status = ?`;
+      params.push(filters.status);
+    }
+    if (filters?.assignee) {
+      sql += ` AND assignee = ?`;
+      params.push(filters.assignee);
+    }
+
+    const result = db.exec(sql, params);
+    if (result.length === 0) return [];
+
+    return result[0].values.map(row => ({
+      id: row[0] as string,
+      name: row[1] as string,
+      description: row[2] as string,
+      status: row[3] as string,
+      assignee: row[4] as string,
+      priority: row[5] as string,
+      dependencies: JSON.parse(row[6] as string || '[]'),
+      estimatedHours: row[7] as number,
+    }));
+  }
+
+  /**
+   * 更新任务状态
+   */
+  async updateTaskStatus(taskId: string, status: string, changedBy?: string): Promise<void> {
+    const db = this.ensureDb();
+    const now = Date.now();
+    
+    // 记录历史
+    const task = db.exec(`SELECT status FROM collaboration_tasks WHERE id = ?`, [taskId]);
+    const oldStatus = task.length > 0 && task[0].values.length > 0 ? task[0].values[0][0] as string : '';
+    
+    if (oldStatus !== status) {
+      db.run(
+        `INSERT INTO task_history (task_id, field, old_value, new_value, changed_by, changed_at)
+         VALUES (?, 'status', ?, ?, ?, ?)`,
+        [taskId, oldStatus, status, changedBy || '', now]
+      );
+    }
+
+    const completedAt = ['completed', 'done'].includes(status) ? now : null;
+    db.run(
+      `UPDATE collaboration_tasks SET status = ?, updated_at = ?, completed_at = ? WHERE id = ?`,
+      [status, now, completedAt, taskId]
+    );
+  }
+
+  /**
+   * 记录协作事件
+   */
+  async recordEvent(
+    eventType: string,
+    entityType: string,
+    entityId: string,
+    payload?: Record<string, unknown>,
+    actor?: string
+  ): Promise<void> {
+    const db = this.ensureDb();
+    const now = Date.now();
+    const payloadStr = payload ? JSON.stringify(payload) : '';
+    
+    db.run(
+      `INSERT INTO collaboration_events (event_type, entity_type, entity_id, payload, actor, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [eventType, entityType, entityId, payloadStr, actor || '', now]
+    );
+  }
+
+  /**
+   * 获取协作事件（用于同步）
+   */
+  async getEvents(since: number, entityType?: string): Promise<Array<{
+    eventType: string;
+    entityType: string;
+    entityId: string;
+    payload: Record<string, unknown>;
+    actor: string;
+    createdAt: number;
+  }>> {
+    const db = this.ensureDb();
+    let sql = `SELECT event_type, entity_type, entity_id, payload, actor, created_at 
+               FROM collaboration_events WHERE created_at > ?`;
+    const params: (number | string)[] = [since];
+
+    if (entityType) {
+      sql += ` AND entity_type = ?`;
+      params.push(entityType);
+    }
+
+    sql += ` ORDER BY created_at ASC LIMIT 100`;
+
+    const result = db.exec(sql, params);
+    if (result.length === 0) return [];
+
+    return result[0].values.map(row => ({
+      eventType: row[0] as string,
+      entityType: row[1] as string,
+      entityId: row[2] as string,
+      payload: JSON.parse(row[3] as string || '{}'),
+      actor: row[4] as string,
+      createdAt: row[5] as number,
+    }));
+  }
+
+  /**
+   * 保存代码评审记录
+   */
+  async saveCodeReview(review: {
+    id: string;
+    prUrl?: string;
+    status?: string;
+    author?: string;
+    reviewers?: string[];
+    issuesCount?: number;
+    passed?: boolean;
+  }): Promise<void> {
+    const db = this.ensureDb();
+    const now = Date.now();
+    const reviewers = review.reviewers ? JSON.stringify(review.reviewers) : '[]';
+    
+    db.run(
+      `INSERT OR REPLACE INTO code_reviews 
+       (id, pr_url, status, author, reviewers, issues_count, passed, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        review.id,
+        review.prUrl || '',
+        review.status || 'pending',
+        review.author || '',
+        reviewers,
+        review.issuesCount || 0,
+        review.passed ? 1 : 0,
+        now,
+        now
+      ]
+    );
+  }
+
+  /**
+   * 获取评审列表
+   */
+  async getCodeReviews(status?: string): Promise<Array<{
+    id: string;
+    prUrl: string;
+    status: string;
+    author: string;
+    reviewers: string[];
+    issuesCount: number;
+    passed: boolean;
+  }>> {
+    const db = this.ensureDb();
+    let sql = `SELECT id, pr_url, status, author, reviewers, issues_count, passed FROM code_reviews`;
+    const params: string[] = [];
+
+    if (status) {
+      sql += ` WHERE status = ?`;
+      params.push(status);
+    }
+
+    sql += ` ORDER BY created_at DESC`;
+
+    const result = db.exec(sql, params);
+    if (result.length === 0) return [];
+
+    return result[0].values.map(row => ({
+      id: row[0] as string,
+      prUrl: row[1] as string,
+      status: row[2] as string,
+      author: row[3] as string,
+      reviewers: JSON.parse(row[4] as string || '[]'),
+      issuesCount: row[5] as number,
+      passed: (row[6] as number) === 1,
+    }));
   }
 }
 
