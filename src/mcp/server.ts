@@ -46,7 +46,9 @@ export class MCPServer {
   /**
    * 处理工具列表请求
    */
-  async handleListTools(): Promise<{ tools: Array<{ name: string; description: string; inputSchema: object }> }> {
+  async handleListTools(): Promise<{
+    tools: Array<{ name: string; description: string; inputSchema: object }>;
+  }> {
     const tools = getAllTools();
     return { tools };
   }
@@ -55,7 +57,7 @@ export class MCPServer {
    * 处理工具调用请求
    */
   async handleCallTool(
-    name: string, 
+    name: string,
     args: Record<string, unknown>
   ): Promise<{ content: Array<{ type: string; text: string }> }> {
     logger.info(`Handling tool call: ${name}`, args);
@@ -72,10 +74,12 @@ export class MCPServer {
             projectPath: args.projectPath as string | undefined,
           });
           return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            }],
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
           };
         }
 
@@ -87,34 +91,40 @@ export class MCPServer {
             args.adjustmentNotes as string | undefined
           );
           return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify(result, null, 2),
-            }],
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
           };
         }
 
         case 'sca-get-report': {
           const report = await this.agent.getReport(args.traceId as string | undefined);
           return {
-            content: [{
-              type: 'text',
-              text: report,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: report,
+              },
+            ],
           };
         }
 
         case 'sca-submit-feedback': {
-          await this.agent.submitFeedback(args.traceId as string || '', {
+          await this.agent.submitFeedback((args.traceId as string) || '', {
             type: args.type as 'bug' | 'suggestion' | 'question',
             content: args.content as string,
             stage: args.stage as string | undefined,
           });
           return {
-            content: [{
-              type: 'text',
-              text: '反馈已提交，感谢您的参与！',
-            }],
+            content: [
+              {
+                type: 'text',
+                text: '反馈已提交，感谢您的参与！',
+              },
+            ],
           };
         }
 
@@ -129,10 +139,12 @@ export class MCPServer {
               source: (args.source as 'web' | 'manual' | 'learned') || 'manual',
             });
             return {
-              content: [{
-                type: 'text',
-                text: `知识 "${args.topic}" 已添加到知识库`,
-              }],
+              content: [
+                {
+                  type: 'text',
+                  text: `知识 "${args.topic}" 已添加到知识库`,
+                },
+              ],
             };
           }
           throw new Error('Knowledge base not available');
@@ -143,12 +155,12 @@ export class MCPServer {
           if (knowledgeBase) {
             const result = await knowledgeBase.search(args.query as string);
             return {
-              content: [{
-                type: 'text',
-                text: result 
-                  ? JSON.stringify(result, null, 2)
-                  : '未找到相关知识',
-              }],
+              content: [
+                {
+                  type: 'text',
+                  text: result ? JSON.stringify(result, null, 2) : '未找到相关知识',
+                },
+              ],
             };
           }
           throw new Error('Knowledge base not available');
@@ -161,20 +173,24 @@ export class MCPServer {
             { name: 'test-driven-development', description: '测试驱动开发流程' },
           ];
           return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify(workflows, null, 2),
-            }],
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(workflows, null, 2),
+              },
+            ],
           };
         }
 
         case 'sca-run-workflow': {
           // 工作流运行需要更复杂的实现
           return {
-            content: [{
-              type: 'text',
-              text: `工作流 "${args.workflowName}" 已启动执行`,
-            }],
+            content: [
+              {
+                type: 'text',
+                text: `工作流 "${args.workflowName}" 已启动执行`,
+              },
+            ],
           };
         }
 
@@ -184,10 +200,12 @@ export class MCPServer {
     } catch (error) {
       logger.error(`Tool call failed: ${name}`, error);
       return {
-        content: [{
-          type: 'text',
-          text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-        }],
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
       };
     }
   }
@@ -195,7 +213,9 @@ export class MCPServer {
   /**
    * 处理资源列表请求
    */
-  async handleListResources(): Promise<{ resources: Array<{ uri: string; name: string; description: string; mimeType: string }> }> {
+  async handleListResources(): Promise<{
+    resources: Array<{ uri: string; name: string; description: string; mimeType: string }>;
+  }> {
     const resources = getAllResources();
     return { resources };
   }
@@ -203,73 +223,109 @@ export class MCPServer {
   /**
    * 处理资源读取请求
    */
-  async handleReadResource(uri: string): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
+  async handleReadResource(
+    uri: string
+  ): Promise<{ contents: Array<{ uri: string; mimeType: string; text: string }> }> {
     const resource = getResourceByURI(uri);
-    
+
     if (!resource) {
       throw new Error(`Resource not found: ${uri}`);
     }
 
     // 根据资源类型获取内容
     let content = '';
-    
+
     switch (uri) {
       case 'sca://workflows':
-        content = JSON.stringify([
-          { name: 'full-demand-analysis', description: '完整需求分析流程' },
-          { name: 'full-development', description: '完整开发流程' },
-          { name: 'quick-development', description: '快速开发流程' },
-        ], null, 2);
+        content = JSON.stringify(
+          [
+            { name: 'full-demand-analysis', description: '完整需求分析流程' },
+            { name: 'full-development', description: '完整开发流程' },
+            { name: 'quick-development', description: '快速开发流程' },
+          ],
+          null,
+          2
+        );
         break;
-        
+
       case 'sca://config':
-        content = JSON.stringify({
-          version: '1.0.0',
-          features: {
-            knowledgeBase: true,
-            observer: true,
-            workflow: true,
+        content = JSON.stringify(
+          {
+            version: '1.0.0',
+            features: {
+              knowledgeBase: true,
+              observer: true,
+              workflow: true,
+            },
           },
-        }, null, 2);
+          null,
+          2
+        );
         break;
 
       case 'sca://skills':
-        content = JSON.stringify({
-          total: 33,
-          categories: ['ask', 'io', 'analyze', 'generate', 'format', 'observe', 'utility', 'workflow'],
-        }, null, 2);
+        content = JSON.stringify(
+          {
+            total: 33,
+            categories: [
+              'ask',
+              'io',
+              'analyze',
+              'generate',
+              'format',
+              'observe',
+              'utility',
+              'workflow',
+            ],
+          },
+          null,
+          2
+        );
         break;
 
-      case 'sca://statistics':
+      case 'sca://statistics': {
         // 获取统计数据
         const reporter = (this.agent as any).observerReporter;
         if (reporter && typeof reporter.getStatistics === 'function') {
           const stats = await reporter.getStatistics();
           content = JSON.stringify(stats, null, 2);
         } else {
-          content = JSON.stringify({
-            note: 'Statistics not available',
-          }, null, 2);
+          content = JSON.stringify(
+            {
+              note: 'Statistics not available',
+            },
+            null,
+            2
+          );
         }
         break;
-        
+      }
+
       default:
         content = `Content for ${uri}`;
     }
 
     return {
-      contents: [{
-        uri,
-        mimeType: resource.mimeType,
-        text: content,
-      }],
+      contents: [
+        {
+          uri,
+          mimeType: resource.mimeType,
+          text: content,
+        },
+      ],
     };
   }
 
   /**
    * 处理提示列表请求（MCP 协议）
    */
-  async handleListPrompts(): Promise<{ prompts: Array<{ name: string; description: string; arguments?: Array<{ name: string; description: string; required: boolean }> }> }> {
+  async handleListPrompts(): Promise<{
+    prompts: Array<{
+      name: string;
+      description: string;
+      arguments?: Array<{ name: string; description: string; required: boolean }>;
+    }>;
+  }> {
     return {
       prompts: [
         {
@@ -302,24 +358,28 @@ export class MCPServer {
     switch (name) {
       case 'analyze-demand':
         return {
-          messages: [{
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `请分析以下需求：\n\n${args.demand}\n\n项目类型：${args.projectType}`,
+          messages: [
+            {
+              role: 'user',
+              content: {
+                type: 'text',
+                text: `请分析以下需求：\n\n${args.demand}\n\n项目类型：${args.projectType}`,
+              },
             },
-          }],
+          ],
         };
 
       case 'generate-code':
         return {
-          messages: [{
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `请根据以下需求生成代码：\n\n${args.demand}\n\n编程语言：${args.language}`,
+          messages: [
+            {
+              role: 'user',
+              content: {
+                type: 'text',
+                text: `请根据以下需求生成代码：\n\n${args.demand}\n\n编程语言：${args.language}`,
+              },
             },
-          }],
+          ],
         };
 
       default:

@@ -172,6 +172,198 @@ server.tool(
   }
 );
 
+// ==================== Forge 工具 ====================
+
+// 延迟加载 Forge 模块（避免循环依赖）
+let forgeRouter: any = null;
+let forgeLoader: any = null;
+let forgeBridge: any = null;
+
+async function getForgeModules() {
+  if (!forgeRouter) {
+    const core = await import('../core/index.js');
+    forgeRouter = core.getSkillRouter();
+    forgeLoader = core.getExternalSkillLoader();
+    forgeBridge = core.getWorkflowBridge();
+  }
+  return { router: forgeRouter, loader: forgeLoader, bridge: forgeBridge };
+}
+
+server.tool(
+  'forge-route',
+  '根据上下文自动路由到合适的技能',
+  {
+    phase: z.enum(['demand', 'architecture', 'implement', 'review', 'qa', 'ship']).describe('当前工作流阶段'),
+    originalInput: z.string().optional().describe('原始用户输入'),
+    techStack: z.string().optional().describe('技术栈'),
+    domain: z.enum(['frontend', 'backend', 'mobile', 'fullstack', 'document', 'media', 'unknown']).optional().describe('技术领域'),
+    complexity: z.enum(['low', 'medium', 'high']).optional().describe('复杂度等级'),
+    hasBrowser: z.boolean().optional().describe('是否需要浏览器功能'),
+  },
+  async (args) => {
+    const { router } = await getForgeModules();
+    const result = router.route({
+      phase: args.phase,
+      originalInput: args.originalInput,
+      techStack: args.techStack,
+      domain: args.domain,
+      complexity: args.complexity,
+      hasBrowser: args.hasBrowser,
+    });
+    return {
+      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  'forge-list-skills',
+  '列出所有可用的 Forge 技能',
+  {
+    source: z.enum(['aios', 'gstack', 'minimax', 'all']).optional().default('all').describe('技能来源筛选'),
+  },
+  async (args) => {
+    const { loader } = await getForgeModules();
+    const allSkills = await loader.listAvailableSkills();
+
+    let result: any;
+    if (args.source === 'all' || !args.source) {
+      result = {
+        aios: ['demand-collect', 'demand-analysis', 'demand-confirm', 'task-decompose', 'task-plan', 'generate-code', 'code-review', 'test-orchestrator'],
+        gstack: allSkills.gstack,
+        minimax: allSkills.minimax,
+      };
+    } else if (args.source === 'aios') {
+      result = {
+        source: 'aios',
+        skills: ['demand-collect', 'demand-analysis', 'demand-confirm', 'task-decompose', 'task-plan', 'generate-code', 'code-review', 'test-orchestrator'],
+      };
+    } else if (args.source === 'gstack') {
+      result = { source: 'gstack', skills: allSkills.gstack };
+    } else if (args.source === 'minimax') {
+      result = { source: 'minimax', skills: allSkills.minimax };
+    }
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  'forge-invoke-skill',
+  '手动调用指定来源的技能',
+  {
+    source: z.enum(['aios', 'gstack', 'minimax']).describe('技能来源'),
+    skill: z.string().describe('技能名称'),
+    args: z.record(z.string(), z.any()).optional().describe('技能参数'),
+  },
+  async (args) => {
+    const { loader } = await getForgeModules();
+    const { SkillSource } = await import('../core/types.js');
+
+    const sourceMap: Record<string, any> = {
+      aios: SkillSource.AIOS,
+      gstack: SkillSource.GSTACK,
+      minimax: SkillSource.MINIMAX,
+    };
+
+    const source = sourceMap[args.source];
+    if (!source) {
+      throw new Error(`Unknown source: ${args.source}`);
+    }
+
+    const content = await loader.getSkillContent(source, args.skill);
+    return {
+      content: [{ type: 'text', text: content }],
+    };
+  }
+);
+
+server.tool(
+  'forge-list-workflows',
+  '列出所有可用的 Forge 工作流',
+  {
+    phase: z.enum(['demand', 'architecture', 'implement', 'review', 'qa', 'ship']).optional().describe('按阶段筛选'),
+  },
+  async (args) => {
+    const { bridge } = await getForgeModules();
+    let workflows = bridge.listWorkflows();
+
+    if (args.phase) {
+      workflows = workflows.filter((w: any) => w.type === args.phase);
+    }
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            workflows.map((w: any) => ({
+              name: w.name,
+              description: w.description,
+              type: w.type,
+              skills: w.skills.map((s: any) => `${s.source}:${s.name}`),
+            })),
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+);
+
+server.tool(
+  'forge-self-iterate',
+  '触发 Forge 自我迭代分析',
+  {
+    mode: z.enum(['manual', 'auto', 'scheduled']).optional().default('manual').describe('触发模式'),
+    includeL3: z.boolean().optional().default(false).describe('是否包含 L3 能力扩展'),
+    includeL4: z.boolean().optional().default(false).describe('是否包含 L4 工作流进化'),
+  },
+  async (args) => {
+    const { SelfIterationEngine } = await import('../core/self-iteration/index.js');
+    const engine = new SelfIterationEngine();
+    
+    const result = await engine.optimize(args.mode || 'manual');
+    
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            {
+              success: result.success,
+              message: result.success
+                ? `自我迭代完成，生成 ${result.optimizations.length} 条优化建议`
+                : `自我迭代完成，但有 ${result.errors.length} 个错误`,
+              optimizations: result.optimizations.map(o => ({
+                id: o.id,
+                type: o.type,
+                priority: o.priority,
+                description: o.description,
+                expectedImprovement: o.expectedImprovement,
+              })),
+              stats: {
+                totalIterations: engine.getStatus().totalIterations,
+                pendingSuggestions: engine.getStatus().pendingSuggestions,
+                appliedSuggestions: engine.getStatus().appliedSuggestions,
+                generatedSkills: engine.getStatus().generatedSkills,
+                evolvedWorkflows: engine.getStatus().evolvedWorkflows,
+              },
+              errors: result.errors,
+              duration: result.duration,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+);
+
 // 更新检测工具
 server.tool('sca-check-update', '检测是否有新版本可用', {}, async () => {
   const result = await checkUpdate();

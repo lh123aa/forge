@@ -80,6 +80,10 @@ import {
 } from './skill-engine/workflows/development.js';
 import { fullCodeGenerationWorkflow, testDrivenDevelopmentWorkflow } from './skill-engine/workflows/code-gen.js';
 
+// 导入自我迭代引擎
+import { SelfIterationEngine } from './core/self-iteration/index.js';
+import { SkillSource } from './core/types.js';
+
 import type { 
   StartParams, 
   RunResult, 
@@ -109,6 +113,7 @@ export class SmartCodeAgent {
   private observerReporter: ObserverReporter;
   private userModificationRecorder: UserModificationRecorder;
   private llmBridge: LLMBridge;
+  private selfIterationEngine: SelfIterationEngine;
 
   // 工作流注册表
   private workflows: Map<string, Workflow> = new Map();
@@ -129,11 +134,34 @@ export class SmartCodeAgent {
     this.skillComposer = new SkillComposer(this.skillRegistry);
     this.workflowStateManager = new WorkflowStateManager(this.storage);
     
-    // 初始化工作流执行器（延迟设置进度回调）
+    // 初始化工作流执行器（带自我迭代回调）
     this.workflowExecutor = new WorkflowExecutor(
       this.skillRegistry,
       this.skillExecutor,
-      { stateManager: this.workflowStateManager }
+      { 
+        stateManager: this.workflowStateManager,
+        onWorkflowComplete: async (result, execution) => {
+          // 记录工作流完成日志用于自我迭代分析
+          // 注意：详细步骤日志由各 Skill 执行时自行记录
+          await this.selfIterationEngine.logExecution({
+            traceId: execution.traceId,
+            workflowName: execution.workflowName,
+            stepName: execution.workflowName, // 记录工作流级别
+            skillName: execution.workflowName,
+            source: SkillSource.AIOS,
+            duration: execution.endTime ? execution.endTime - execution.startTime : 0,
+            success: result.code === 200,
+            retryCount: 0,
+            error: result.code !== 200 ? result.message : undefined,
+          });
+          
+          // 检查是否应该自动优化
+          if (this.selfIterationEngine.shouldAutoOptimize()) {
+            logger.info('Triggering auto-optimization via self-iteration engine');
+            await this.selfIterationEngine.optimize('auto');
+          }
+        },
+      }
     );
 
     // 初始化功能模块
@@ -142,6 +170,7 @@ export class SmartCodeAgent {
     this.observerReporter = new ObserverReporter(this.storage);
     this.userModificationRecorder = new UserModificationRecorder(this.storage);
     this.llmBridge = new LLMBridge();
+    this.selfIterationEngine = new SelfIterationEngine();
 
     // 注册工作流
     this.registerWorkflows();
@@ -159,6 +188,26 @@ export class SmartCodeAgent {
       { 
         stateManager: this.workflowStateManager,
         onProgress: callback,
+        onWorkflowComplete: async (result, execution) => {
+          // 记录工作流完成日志用于自我迭代分析
+          await this.selfIterationEngine.logExecution({
+            traceId: execution.traceId,
+            workflowName: execution.workflowName,
+            stepName: execution.workflowName,
+            skillName: execution.workflowName,
+            source: SkillSource.AIOS,
+            duration: execution.endTime ? execution.endTime - execution.startTime : 0,
+            success: result.code === 200,
+            retryCount: 0,
+            error: result.code !== 200 ? result.message : undefined,
+          });
+          
+          // 检查是否应该自动优化
+          if (this.selfIterationEngine.shouldAutoOptimize()) {
+            logger.info('Triggering auto-optimization via self-iteration engine');
+            await this.selfIterationEngine.optimize('auto');
+          }
+        },
       }
     );
   }

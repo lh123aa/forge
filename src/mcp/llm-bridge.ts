@@ -242,7 +242,7 @@ ${schema ? `\n输出必须符合以下 JSON Schema:\n${JSON.stringify(schema, nu
   buildCodeGenerationPrompt(params: CodeGenerationParams): string {
     const { demand, type, language, framework, template, existingCode } = params;
 
-    let prompt = `请根据以下需求生成代码。
+    const prompt = `请根据以下需求生成代码。
 
 需求描述: ${demand}
 代码类型: ${type}

@@ -1,12 +1,12 @@
 // 错误处理工具 - 统一错误处理和日志记录
 
-import { 
-  SCAError, 
-  ErrorCode, 
-  ErrorSeverity, 
+import {
+  SCAError,
+  ErrorCode,
+  ErrorSeverity,
   ErrorRecoverable,
   type ErrorContext,
-  type RecoverySuggestion 
+  type RecoverySuggestion,
 } from '../types/errors.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -83,14 +83,14 @@ export class ErrorHandler {
    * 处理错误并返回结果
    */
   handleResult<T>(
-    error: unknown, 
+    error: unknown,
     context?: ErrorContext
   ): { success: false; error: SCAError } | { success: true; data: T } {
     if (error instanceof SCAError) {
       const processed = this.processError(error, context);
       return { success: false, error: processed };
     }
-    
+
     if (error instanceof Error) {
       const processed = this.wrapError(error, context);
       return { success: false, error: this.processError(processed, context) };
@@ -184,10 +184,14 @@ export class ErrorHandler {
    * 记录错误
    */
   private logError(error: SCAError): void {
-    const logMethod = error.severity === ErrorSeverity.CRITICAL ? logger.error 
-      : error.severity === ErrorSeverity.ERROR ? logger.error
-      : error.severity === ErrorSeverity.WARNING ? logger.warn
-      : logger.info;
+    const logMethod =
+      error.severity === ErrorSeverity.CRITICAL
+        ? logger.error
+        : error.severity === ErrorSeverity.ERROR
+          ? logger.error
+          : error.severity === ErrorSeverity.WARNING
+            ? logger.warn
+            : logger.info;
 
     logMethod(`[${error.code}] ${error.message}`, {
       code: error.code,
@@ -286,15 +290,37 @@ export class ErrorHandler {
    */
   private inferSeverity(error: Error): ErrorSeverity {
     const name = error.name.toLowerCase();
+    const message = error.message.toLowerCase();
 
-    if (name.includes('typeerror') || name.includes('referenceerror')) {
+    // 严重错误
+    if (
+      name.includes('typeerror') ||
+      name.includes('referenceerror') ||
+      name.includes('syntaxerror')
+    ) {
       return ErrorSeverity.ERROR;
     }
     if (name.includes('range') || name.includes('syntax')) {
       return ErrorSeverity.ERROR;
     }
+    if (
+      message.includes('permission') ||
+      message.includes('denied') ||
+      message.includes('econnrefused')
+    ) {
+      return ErrorSeverity.ERROR;
+    }
 
-    return ErrorSeverity.ERROR;
+    // 警告级别
+    if (name.includes('deprecation') || message.includes('deprecated')) {
+      return ErrorSeverity.WARNING;
+    }
+    if (name.includes('timeout') || message.includes('timeout')) {
+      return ErrorSeverity.WARNING;
+    }
+
+    // 默认信息级别
+    return ErrorSeverity.INFO;
   }
 }
 

@@ -10,25 +10,32 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      tsconfig: {
-        module: 'ESNext',
-        target: 'ES2022',
-        esModuleInterop: true,
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          module: 'ESNext',
+          target: 'ES2022',
+          esModuleInterop: true,
+        },
       },
-    }],
+    ],
   },
   // 转换 ESM 包（如 chalk）
   transformIgnorePatterns: [
     'node_modules/(?!(chalk|ansi-styles|escape-string-regexp|supports-color)/)',
   ],
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/types/**',
-  ],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/types/**'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
+  coverageThreshold: {
+    global: {
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50,
+    },
+  },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 30000,
   verbose: true,

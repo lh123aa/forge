@@ -85,10 +85,11 @@ export class VersionManagerSkill extends BaseSkill {
         default:
           return this.fatalError(`不支持的操作: ${action}`);
       }
-
     } catch (error) {
       logger.error('Version manager failed', { error });
-      return this.fatalError(`版本管理失败: ${error instanceof Error ? error.message : String(error)}`);
+      return this.fatalError(
+        `版本管理失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -98,10 +99,13 @@ export class VersionManagerSkill extends BaseSkill {
   private async getVersion(projectPath: string): Promise<SkillOutput> {
     const versionInfo = await this.readVersion(projectPath);
 
-    return this.success({
-      currentVersion: versionInfo,
-      versionFile: `${projectPath}/package.json`,
-    }, `当前版本: ${versionInfo.version}`);
+    return this.success(
+      {
+        currentVersion: versionInfo,
+        versionFile: `${projectPath}/package.json`,
+      },
+      `当前版本: ${versionInfo.version}`
+    );
   }
 
   /**
@@ -123,12 +127,15 @@ export class VersionManagerSkill extends BaseSkill {
       await this.appendChangelog(projectPath, newVersionStr, changelog);
     }
 
-    return this.success({
-      previousVersion: currentVersion.version,
-      newVersion: newVersionStr,
-      bumpType,
-      versionFile: projectPath + '/package.json',
-    }, '版本已升级: ' + currentVersion.version + ' -> ' + newVersionStr);
+    return this.success(
+      {
+        previousVersion: currentVersion.version,
+        newVersion: newVersionStr,
+        bumpType,
+        versionFile: projectPath + '/package.json',
+      },
+      '版本已升级: ' + currentVersion.version + ' -> ' + newVersionStr
+    );
   }
 
   /**
@@ -154,31 +161,34 @@ export class VersionManagerSkill extends BaseSkill {
       await this.appendChangelog(projectPath, version, changelog);
     }
 
-    return this.success({
-      previousVersion: currentVersion.version,
-      newVersion: version,
-      versionFile: `${projectPath}/package.json`,
-    }, `版本已设置为: ${version}`);
+    return this.success(
+      {
+        previousVersion: currentVersion.version,
+        newVersion: version,
+        versionFile: `${projectPath}/package.json`,
+      },
+      `版本已设置为: ${version}`
+    );
   }
 
   /**
    * 创建 Git 标签
    */
-  private async createTag(
-    projectPath: string,
-    tagPrefix: string
-  ): Promise<SkillOutput> {
+  private async createTag(projectPath: string, tagPrefix: string): Promise<SkillOutput> {
     const versionInfo = await this.readVersion(projectPath);
     const tagName = `${tagPrefix}${versionInfo.version}`;
 
     // 模拟创建标签（实际应调用 git 命令）
     logger.info('Creating git tag', { tagName });
 
-    return this.success({
-      tagName,
-      tagPrefix,
-      version: versionInfo.version,
-    }, `Git 标签已创建: ${tagName}`);
+    return this.success(
+      {
+        tagName,
+        tagPrefix,
+        version: versionInfo.version,
+      },
+      `Git 标签已创建: ${tagName}`
+    );
   }
 
   /**
@@ -188,7 +198,7 @@ export class VersionManagerSkill extends BaseSkill {
     // 模拟从 package.json 读取版本
     // 实际应读取 package.json 文件
     const mockVersion = '1.0.0';
-    
+
     return this.parseVersion(mockVersion);
   }
 
@@ -196,8 +206,8 @@ export class VersionManagerSkill extends BaseSkill {
    * 解析版本号
    */
   private parseVersion(versionString: string): VersionInfo {
-    const match = versionString.match(/^(\d+)\.(\d+)\.(\d+)(?:-([^\+]+))?$/);
-    
+    const match = versionString.match(/^(\d+)\.(\d+)\.(\d+)(?:-([^+]+))?$/);
+
     if (!match) {
       throw new Error(`无法解析版本号: ${versionString}`);
     }
@@ -248,7 +258,7 @@ export class VersionManagerSkill extends BaseSkill {
    * 验证版本号格式
    */
   private isValidVersion(version: string): boolean {
-    return /^\d+\.\d+\.\d+(?:-[^\+]+)?$/.test(version);
+    return /^\d+\.\d+\.\d+(?:-[^+]+)?$/.test(version);
   }
 
   /**
@@ -269,7 +279,7 @@ export class VersionManagerSkill extends BaseSkill {
   ): Promise<void> {
     const changelogPath = `${projectPath}/CHANGELOG.md`;
     const entry = `\n## [${version}] - ${new Date().toISOString().split('T')[0]}\n\n${content}\n`;
-    
+
     logger.info('Appending to changelog', { changelogPath, entry });
     // 实际应写入 changelog
   }

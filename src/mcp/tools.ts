@@ -167,6 +167,120 @@ export const tools: Tool[] = [
       required: ['workflowName'],
     },
   },
+  // ==================== Forge 工具 ====================
+  {
+    name: 'forge-route',
+    description: '根据上下文自动路由到合适的技能，返回技能来源和名称',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        phase: {
+          type: 'string',
+          enum: ['demand', 'architecture', 'implement', 'review', 'qa', 'ship'],
+          description: '当前工作流阶段',
+        },
+        originalInput: {
+          type: 'string',
+          description: '原始用户输入（用于推断 domain 和 complexity）',
+        },
+        techStack: {
+          type: 'string',
+          description: '技术栈（如 react, vue, angular 等）',
+        },
+        domain: {
+          type: 'string',
+          enum: ['frontend', 'backend', 'mobile', 'fullstack', 'document', 'media', 'unknown'],
+          description: '技术领域',
+        },
+        complexity: {
+          type: 'string',
+          enum: ['low', 'medium', 'high'],
+          description: '复杂度等级',
+        },
+        hasBrowser: {
+          type: 'boolean',
+          description: '是否需要浏览器功能',
+        },
+      },
+      required: ['phase'],
+    },
+  },
+  {
+    name: 'forge-list-skills',
+    description: '列出所有可用的 Forge 技能（AIOS + gstack + MiniMax）',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: {
+          type: 'string',
+          enum: ['aios', 'gstack', 'minimax', 'all'],
+          description: '技能来源筛选',
+        },
+      },
+    },
+  },
+  {
+    name: 'forge-invoke-skill',
+    description: '手动调用指定来源的技能',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: {
+          type: 'string',
+          enum: ['aios', 'gstack', 'minimax'],
+          description: '技能来源',
+        },
+        skill: {
+          type: 'string',
+          description: '技能名称',
+        },
+        args: {
+          type: 'object',
+          description: '技能参数',
+        },
+      },
+      required: ['source', 'skill'],
+    },
+  },
+  {
+    name: 'forge-list-workflows',
+    description: '列出所有可用的 Forge 工作流',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        phase: {
+          type: 'string',
+          enum: ['demand', 'architecture', 'implement', 'review', 'qa', 'ship'],
+          description: '按阶段筛选工作流',
+        },
+      },
+    },
+  },
+  {
+    name: 'forge-self-iterate',
+    description: '触发 Forge 自我迭代分析，分析近期执行日志，生成优化建议（可选：生成新 Skill / 进化工作流）',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        mode: {
+          type: 'string',
+          enum: ['manual', 'auto', 'scheduled'],
+          default: 'manual',
+          description: '触发模式：manual=手动触发, auto=自动优化, scheduled=定时任务',
+        },
+        includeL3: {
+          type: 'boolean',
+          default: false,
+          description: '是否包含 L3 能力扩展（生成新 Skill）',
+        },
+        includeL4: {
+          type: 'boolean',
+          default: false,
+          description: '是否包含 L4 工作流进化（优化工作流）',
+        },
+      },
+    },
+  },
 ];
 
 /**

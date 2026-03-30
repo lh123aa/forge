@@ -44,6 +44,8 @@ export interface WorkflowExecutorOptions {
   stateManager?: WorkflowStateManager;
   /** 进度回调 */
   onProgress?: (args: ProgressCallbackArgs) => void;
+  /** 工作流完成回调 */
+  onWorkflowComplete?: (result: SkillOutput, execution: WorkflowExecution) => void;
   /** 启用质量门禁 */
   enableQualityGate?: boolean;
   /** 质量门禁检查点 */
@@ -67,7 +69,7 @@ export class WorkflowExecutor {
   private executor: SkillExecutor;
   private parser: WorkflowParser;
   private stateManager: WorkflowStateManager;
-  private options: WorkflowExecutorOptions & { onProgress?: (args: ProgressCallbackArgs) => void };
+  private options: WorkflowExecutorOptions;
   // 保存工作流定义，用于 resume 时恢复执行
   private workflows: Map<string, Workflow> = new Map();
   // 质量门禁
@@ -330,7 +332,7 @@ export class WorkflowExecutor {
         duration: execution.endTime - execution.startTime,
       });
 
-      return {
+      const result: SkillOutput = {
         code: 200,
         data: {
           execution,
@@ -338,6 +340,19 @@ export class WorkflowExecutor {
         },
         message: `Workflow "${workflow.name}" completed successfully`,
       };
+
+      // 触发工作流完成回调
+      if (this.options.onWorkflowComplete) {
+        try {
+          this.options.onWorkflowComplete(result, execution);
+        } catch (error) {
+          logger.warn('Workflow complete callback error', {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      return result;
 
     } catch (error) {
       execution.status = 'failed';

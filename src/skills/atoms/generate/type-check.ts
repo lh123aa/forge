@@ -140,7 +140,7 @@ export class TypeCheckSkill extends BaseSkill {
     // 模拟类型检查结果
     const issues: TypeCheckResult['errors'] = [];
     let errorCount = 0;
-    let warningCount = 0;
+    const warningCount = 0;
 
     // 模拟一些类型错误
     for (const file of files.slice(0, 5)) {

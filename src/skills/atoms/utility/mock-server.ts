@@ -136,7 +136,7 @@ export class MockServerSkill extends BaseSkill {
         const detail = details as Record<string, unknown>;
         
         // 提取响应模板
-        let response = this.extractResponseTemplate(detail.response as Record<string, unknown>);
+        const response = this.extractResponseTemplate(detail.response as Record<string, unknown>);
         
         // 添加延迟
         const endpointDelay = detail.delay as number | undefined || defaultDelay;

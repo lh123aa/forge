@@ -49,14 +49,14 @@ export class ErrorFixSkill extends BaseSkill {
   }> = [
     // 缺失分号（JS/TS）
     {
-      pattern: /([a-zA-Z0-9\)\]}'"])\s*\n\s*([a-zA-Z\(])/g,
+      pattern: /([a-zA-Z0-9)\]}'"])\s*\n\s*([a-zA-Z(])/g,
       replacement: '$1;\n$2',
       description: '自动添加缺失的分号',
       safe: true,
     },
     // 缺失逗号
     {
-      pattern: /(['"`])(?!\s*[,;\)\]}])\s*\n\s*(['"`])/g,
+      pattern: /(['"`])(?!\s*[,;)}])\s*\n\s*(['"`])/g,
       replacement: '$1,\n$2',
       description: '修复数组/对象中缺失的逗号',
       safe: true,
@@ -127,14 +127,17 @@ export class ErrorFixSkill extends BaseSkill {
 
       // 判断执行结果
       if (result.fixed) {
-        return this.success({
-          originalCode: result.originalCode,
-          fixedCode: result.fixedCode,
-          appliedFixes: result.appliedFixes,
-          remainingErrors: result.remainingErrors,
-          fixCount: result.appliedFixes.length,
-          language,
-        }, `错误修复完成，应用了 ${result.appliedFixes.length} 个修复`);
+        return this.success(
+          {
+            originalCode: result.originalCode,
+            fixedCode: result.fixedCode,
+            appliedFixes: result.appliedFixes,
+            remainingErrors: result.remainingErrors,
+            fixCount: result.appliedFixes.length,
+            language,
+          },
+          `错误修复完成，应用了 ${result.appliedFixes.length} 个修复`
+        );
       } else if (result.remainingErrors.length > 0) {
         // 有无法修复的错误，返回警告
         return {
@@ -149,17 +152,21 @@ export class ErrorFixSkill extends BaseSkill {
         };
       } else {
         // 无错误
-        return this.success({
-          originalCode: code,
-          fixedCode: code,
-          appliedFixes: [],
-          remainingErrors: [],
-          fixCount: 0,
-        }, '代码无错误，无需修复');
+        return this.success(
+          {
+            originalCode: code,
+            fixedCode: code,
+            appliedFixes: [],
+            remainingErrors: [],
+            fixCount: 0,
+          },
+          '代码无错误，无需修复'
+        );
       }
-
     } catch (error) {
-      return this.fatalError(`错误修复失败: ${error instanceof Error ? error.message : String(error)}`);
+      return this.fatalError(
+        `错误修复失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -194,9 +201,8 @@ export class ErrorFixSkill extends BaseSkill {
     }
 
     // 应用通用修复规则
-    const activeRules = fixLevel === 'aggressive' 
-      ? this.fixRules 
-      : this.fixRules.filter(rule => rule.safe);
+    const activeRules =
+      fixLevel === 'aggressive' ? this.fixRules : this.fixRules.filter((rule) => rule.safe);
 
     for (const rule of activeRules) {
       const beforeLength = fixedCode.length;
@@ -325,7 +331,7 @@ export class ErrorFixSkill extends BaseSkill {
     const match = message.match(/['"](\w+)['"] is not defined/);
     if (match) {
       const undefinedName = match[1];
-      
+
       // 常见 React 组件修复
       const reactComponents: Record<string, string> = {
         div: 'div',
