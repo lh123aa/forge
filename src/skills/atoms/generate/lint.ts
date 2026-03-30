@@ -53,9 +53,9 @@ export class LintSkill extends BaseSkill {
 
   // 评分规则
   private readonly scoring = {
-    errorPenalty: 20,    // 每个错误扣分
-    warningPenalty: 5,   // 每个警告扣分
-    maxPenalty: 100,     // 最大扣分
+    errorPenalty: 20, // 每个错误扣分
+    warningPenalty: 5, // 每个警告扣分
+    maxPenalty: 100, // 最大扣分
   };
 
   protected async execute(input: SkillInput): Promise<SkillOutput> {
@@ -101,10 +101,13 @@ export class LintSkill extends BaseSkill {
       };
 
       if (lintResult.passed) {
-        return this.success({
-          testLevel: 'L1',
-          testResult: lintResult,
-        }, `L1 语法检查通过: ${score} 分`);
+        return this.success(
+          {
+            testLevel: 'L1',
+            testResult: lintResult,
+          },
+          `L1 语法检查通过: ${score} 分`
+        );
       } else {
         return {
           code: 400,
@@ -115,17 +118,21 @@ export class LintSkill extends BaseSkill {
           message: `[${this.meta.name}] L1 检查未通过: ${result.errorCount} 错误, ${result.warningCount} 警告`,
         };
       }
-
     } catch (error) {
       logger.error('Lint check failed', { error });
-      return this.fatalError(`L1 检查失败: ${error instanceof Error ? error.message : String(error)}`);
+      return this.fatalError(
+        `L1 检查失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
   /**
    * 执行 lint 检查
    */
-  private async runLint(files: string[], fix: boolean): Promise<{
+  private async runLint(
+    files: string[],
+    fix: boolean
+  ): Promise<{
     files: string[];
     errorCount: number;
     warningCount: number;
@@ -134,49 +141,77 @@ export class LintSkill extends BaseSkill {
     passedRules: string[];
     failedRules: string[];
   }> {
-    // 模拟 lint 执行结果
+    const { spawn } = await import('child_process');
     const issues: LintResult['errors'] = [];
     let errorCount = 0;
     let warningCount = 0;
     let fixableCount = 0;
 
-    // 模拟检查结果（实际应调用 ESLint API）
-    for (const file of files.slice(0, 5)) {
-      // 随机生成一些问题用于演示
-      if (Math.random() > 0.7) {
-        issues.push({
-          file,
-          line: Math.floor(Math.random() * 100) + 1,
-          column: Math.floor(Math.random() * 80) + 1,
-          message: 'Unexpected console statement',
-          rule: 'no-console',
-          severity: 'warning',
-          fixable: true,
-          fix: 'Remove console statement',
-        });
-        warningCount++;
-        fixableCount++;
+    const allRules = ['no-console', 'no-unused-vars', 'prefer-const', 'eqeqeq', 'curly'];
+
+    try {
+      // 构建 eslint 参数
+      const args = [
+        ...files.flatMap((f) => ['--ext', '.ts', f]),
+        '--format',
+        'json',
+        '--no-error-on-unmatched-pattern',
+      ];
+
+      if (fix) {
+        args.push('--fix');
       }
 
-      if (Math.random() > 0.9) {
-        issues.push({
-          file,
-          line: Math.floor(Math.random() * 100) + 1,
-          column: Math.floor(Math.random() * 80) + 1,
-          message: "'x' is defined but never used",
-          rule: 'no-unused-vars',
-          severity: 'error',
-          fixable: true,
-          fix: 'Remove unused variable',
-        });
-        errorCount++;
-        fixableCount++;
+      const result = await new Promise<{ stdout: string; stderr: string; code: number }>(
+        (resolve) => {
+          const proc = spawn('npx', ['eslint', ...args], { shell: true });
+          let stdout = '';
+          let stderr = '';
+
+          proc.stdout?.on('data', (data) => {
+            stdout += data.toString();
+          });
+          proc.stderr?.on('data', (data) => {
+            stderr += data.toString();
+          });
+          proc.on('close', (code) => resolve({ stdout, stderr, code: code || 0 }));
+          proc.on('error', (err) => resolve({ stdout: '', stderr: err.message, code: 1 }));
+        }
+      );
+
+      // 解析 ESLint JSON 输出
+      if (result.stdout) {
+        try {
+          const eslintResults = JSON.parse(result.stdout);
+          for (const fileResult of eslintResults) {
+            for (const msg of fileResult.messages || []) {
+              const severity = msg.severity === 2 ? 'error' : 'warning';
+              issues.push({
+                file: fileResult.filePath,
+                line: msg.line,
+                column: msg.column,
+                message: msg.message,
+                rule: msg.ruleId || 'unknown',
+                severity,
+                fixable: !!msg.fix,
+                fix: msg.fix ? msg.fix.text : undefined,
+              });
+
+              if (severity === 'error') errorCount++;
+              else warningCount++;
+              if (msg.fix) fixableCount++;
+            }
+          }
+        } catch {
+          logger.warn('Failed to parse ESLint JSON output');
+        }
       }
+    } catch (error) {
+      logger.warn('ESLint not available', { error });
     }
 
-    const allRules = ['no-console', 'no-unused-vars', 'prefer-const', 'eqeqeq', 'curly'];
-    const failedRules = [...new Set(issues.map(i => i.rule))];
-    const passedRules = allRules.filter(r => !failedRules.includes(r));
+    const failedRules = [...new Set(issues.map((i) => i.rule).filter(Boolean))];
+    const passedRules = allRules.filter((r) => !failedRules.includes(r));
 
     return {
       files,
@@ -192,10 +227,7 @@ export class LintSkill extends BaseSkill {
   /**
    * 计算评分
    */
-  private calculateScore(result: {
-    errorCount: number;
-    warningCount: number;
-  }): number {
+  private calculateScore(result: { errorCount: number; warningCount: number }): number {
     const { errorPenalty, warningPenalty, maxPenalty } = this.scoring;
     const penalty = Math.min(
       result.errorCount * errorPenalty + result.warningCount * warningPenalty,

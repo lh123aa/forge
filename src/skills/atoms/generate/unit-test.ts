@@ -53,8 +53,8 @@ export class UnitTestSkill extends BaseSkill {
   // 评分规则
   private readonly scoring = {
     failedTestPenalty: 15,
-    coverageTarget: 80,  // 目标覆盖率
-    coveragePenalty: 1,  // 每低于目标1%扣分
+    coverageTarget: 80, // 目标覆盖率
+    coveragePenalty: 1, // 每低于目标1%扣分
   };
 
   protected async execute(input: SkillInput): Promise<SkillOutput> {
@@ -98,10 +98,13 @@ export class UnitTestSkill extends BaseSkill {
       };
 
       if (testResult.passed) {
-        return this.success({
-          testLevel: 'L3',
-          testResult: testResult,
-        }, `L3 单元测试通过: ${score} 分，覆盖率 ${result.coverage}%`);
+        return this.success(
+          {
+            testLevel: 'L3',
+            testResult: testResult,
+          },
+          `L3 单元测试通过: ${score} 分，覆盖率 ${result.coverage}%`
+        );
       } else {
         return {
           code: 400,
@@ -112,10 +115,11 @@ export class UnitTestSkill extends BaseSkill {
           message: `[${this.meta.name}] L3 测试未通过: ${result.failed}/${result.total} 失败`,
         };
       }
-
     } catch (error) {
       logger.error('Unit test failed', { error });
-      return this.fatalError(`L3 测试失败: ${error instanceof Error ? error.message : String(error)}`);
+      return this.fatalError(
+        `L3 测试失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -131,32 +135,110 @@ export class UnitTestSkill extends BaseSkill {
     failures: UnitTestResult['errors'];
     coverageDetails?: UnitTestResult['coverageDetails'];
   }> {
-    // 模拟测试执行
-    const total = 10 + Math.floor(Math.random() * 10);
-    const failed = Math.floor(Math.random() * 3);
-    const passed = total - failed - Math.floor(Math.random() * 2);
-    const skipped = total - passed - failed;
+    const { spawn } = await import('child_process');
 
+    let total = 0;
+    let passed = 0;
+    let failed = 0;
+    let skipped = 0;
+    let coverage = 0;
     const failures: UnitTestResult['errors'] = [];
-    for (let i = 0; i < failed; i++) {
-      failures.push({
-        testName: `test_${i + 1}`,
-        file: `tests/unit.test.ts`,
-        message: `Expected true but received false`,
-        fixable: true,
-      });
+    let coverageDetails: UnitTestResult['coverageDetails'] | undefined;
+
+    try {
+      // 构建 jest 参数
+      const args = ['--passWithNoTests', '--json'];
+
+      if (withCoverage) {
+        args.push('--coverage', '--coverageReporters', 'json', '--coverageThreshold', '{}');
+      }
+
+      const result = await new Promise<{ stdout: string; stderr: string; code: number }>(
+        (resolve) => {
+          const proc = spawn('npx', ['jest', ...args], { shell: true, timeout: 120000 });
+          let stdout = '';
+          let stderr = '';
+
+          proc.stdout?.on('data', (data) => {
+            stdout += data.toString();
+          });
+          proc.stderr?.on('data', (data) => {
+            stderr += data.toString();
+          });
+          proc.on('close', (code) => resolve({ stdout, stderr, code: code || 0 }));
+          proc.on('error', (err) => resolve({ stdout: '', stderr: err.message, code: 1 }));
+        }
+      );
+
+      // 解析 Jest JSON 输出
+      if (result.stdout) {
+        try {
+          const jestOutput = JSON.parse(result.stdout);
+
+          total = jestOutput.numTotalTests || 0;
+          passed = jestOutput.numPassedTests || 0;
+          failed = jestOutput.numFailedTests || 0;
+          skipped = jestOutput.numPendingTests || 0;
+
+          // 解析失败的测试
+          for (const test of jestOutput.testResults || []) {
+            for (const assertion of test.assertionResults || []) {
+              if (assertion.status === 'failed') {
+                failures.push({
+                  testName: assertion.fullName,
+                  file: test.name,
+                  message: assertion.failureMessages?.join('\n') || 'Test failed',
+                  fixable: false,
+                });
+              }
+            }
+          }
+
+          // 解析覆盖率
+          if (withCoverage && jestOutput.coverageMap) {
+            const coverageMap = jestOutput.coverageMap;
+            let stmtTotal = 0,
+              stmtCovered = 0;
+            let branchTotal = 0,
+              branchCovered = 0;
+            let fnTotal = 0,
+              fnCovered = 0;
+            let linesTotal = 0,
+              linesCovered = 0;
+
+            for (const file of Object.values(coverageMap || {}) as any[]) {
+              stmtTotal += file.s?.total || 0;
+              stmtCovered += file.s?.covered || 0;
+              branchTotal += file.b?.total || 0;
+              branchCovered += file.b?.covered || 0;
+              fnTotal += file.fn?.total || 0;
+              fnCovered += file.fn?.covered || 0;
+              linesTotal += file.lines?.total || 0;
+              linesCovered += file.lines?.covered || 0;
+            }
+
+            coverageDetails = {
+              statements: stmtTotal > 0 ? Math.round((stmtCovered / stmtTotal) * 100) : 0,
+              branches: branchTotal > 0 ? Math.round((branchCovered / branchTotal) * 100) : 0,
+              functions: fnTotal > 0 ? Math.round((fnCovered / fnTotal) * 100) : 0,
+              lines: linesTotal > 0 ? Math.round((linesCovered / linesTotal) * 100) : 0,
+            };
+
+            coverage = Math.round(
+              (coverageDetails.statements +
+                coverageDetails.branches +
+                coverageDetails.functions +
+                coverageDetails.lines) /
+                4
+            );
+          }
+        } catch {
+          logger.warn('Failed to parse Jest JSON output');
+        }
+      }
+    } catch (error) {
+      logger.warn('Jest not available', { error });
     }
-
-    const coverageDetails = withCoverage ? {
-      statements: 75 + Math.floor(Math.random() * 20),
-      branches: 65 + Math.floor(Math.random() * 25),
-      functions: 80 + Math.floor(Math.random() * 15),
-      lines: 78 + Math.floor(Math.random() * 17),
-    } : undefined;
-
-    const coverage = coverageDetails
-      ? Math.round((coverageDetails.statements + coverageDetails.branches + coverageDetails.functions + coverageDetails.lines) / 4)
-      : 0;
 
     return {
       total,
@@ -172,10 +254,7 @@ export class UnitTestSkill extends BaseSkill {
   /**
    * 计算评分
    */
-  private calculateScore(result: {
-    failed: number;
-    coverage: number;
-  }): number {
+  private calculateScore(result: { failed: number; coverage: number }): number {
     const { failedTestPenalty, coverageTarget, coveragePenalty } = this.scoring;
 
     let score = 100;

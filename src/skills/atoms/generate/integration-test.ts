@@ -45,12 +45,7 @@ export class IntegrationTestSkill extends BaseSkill {
 
   protected async execute(input: SkillInput): Promise<SkillOutput> {
     const params = input.task.params as IntegrationTestParams;
-    const { 
-      projectPath = '.',
-      testType = 'full',
-      timeout = 60000,
-      skipInstall = false,
-    } = params;
+    const { projectPath = '.', testType = 'full', timeout = 60000, skipInstall = false } = params;
 
     try {
       const result = await this.runIntegrationTests({
@@ -72,14 +67,18 @@ export class IntegrationTestSkill extends BaseSkill {
         };
       }
 
-      return this.success({
-        projectPath,
-        testType,
-        result,
-      }, `集成测试完成: ${result.summary.passed} 项检查通过`);
-
+      return this.success(
+        {
+          projectPath,
+          testType,
+          result,
+        },
+        `集成测试完成: ${result.summary.passed} 项检查通过`
+      );
     } catch (error) {
-      return this.fatalError(`集成测试执行失败: ${error instanceof Error ? error.message : String(error)}`);
+      return this.fatalError(
+        `集成测试执行失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -113,10 +112,10 @@ export class IntegrationTestSkill extends BaseSkill {
     }
 
     const summary = {
-      passed: checks.filter(c => c.status === 'pass').length,
-      failed: checks.filter(c => c.status === 'fail').length,
-      warnings: checks.filter(c => c.status === 'warn').length,
-      skipped: checks.filter(c => c.status === 'skip').length,
+      passed: checks.filter((c) => c.status === 'pass').length,
+      failed: checks.filter((c) => c.status === 'fail').length,
+      warnings: checks.filter((c) => c.status === 'warn').length,
+      skipped: checks.filter((c) => c.status === 'skip').length,
     };
 
     return {
@@ -130,13 +129,16 @@ export class IntegrationTestSkill extends BaseSkill {
   /**
    * 检查依赖
    */
-  private async checkDependencies(projectPath: string, skipInstall: boolean): Promise<IntegrationResult['checks'][0]> {
+  private async checkDependencies(
+    projectPath: string,
+    skipInstall: boolean
+  ): Promise<IntegrationResult['checks'][0]> {
     const startTime = Date.now();
 
     try {
       // 检查 package.json 是否存在
       const hasPackageJson = await this.fileExists(projectPath, 'package.json');
-      
+
       if (!hasPackageJson) {
         return {
           name: 'dependencies',
@@ -183,7 +185,7 @@ export class IntegrationTestSkill extends BaseSkill {
     try {
       // 检查 TypeScript 配置
       const hasTsConfig = await this.fileExists(projectPath, 'tsconfig.json');
-      
+
       if (!hasTsConfig) {
         return {
           name: 'build',
@@ -195,7 +197,7 @@ export class IntegrationTestSkill extends BaseSkill {
 
       // 检查构建脚本
       const hasBuildScript = await this.hasBuildScript(projectPath);
-      
+
       if (!hasBuildScript) {
         return {
           name: 'build',
@@ -224,13 +226,16 @@ export class IntegrationTestSkill extends BaseSkill {
   /**
    * 检查启动
    */
-  private async checkStart(projectPath: string, timeout: number): Promise<IntegrationResult['checks'][0]> {
+  private async checkStart(
+    projectPath: string,
+    timeout: number
+  ): Promise<IntegrationResult['checks'][0]> {
     const startTime = Date.now();
 
     try {
       // 检查启动脚本
       const hasStartScript = await this.hasStartScript(projectPath);
-      
+
       if (!hasStartScript) {
         return {
           name: 'start',
@@ -266,7 +271,7 @@ export class IntegrationTestSkill extends BaseSkill {
     try {
       // 检查 API 路由文件
       const hasAPIRoutes = await this.hasAPIRoutes(projectPath);
-      
+
       if (!hasAPIRoutes) {
         return {
           name: 'api',
@@ -296,45 +301,84 @@ export class IntegrationTestSkill extends BaseSkill {
    * 检查文件是否存在
    */
   private async fileExists(basePath: string, fileName: string): Promise<boolean> {
-    // 简化实现：只检查常见位置
-    const paths = [
-      `${basePath}/${fileName}`,
-      `${basePath}/${fileName}`,
-    ];
-    
-    // 这里应该用 fs.access 检查，但简化处理
-    return true;
+    const { access } = await import('fs/promises');
+    const { join } = await import('path');
+
+    try {
+      await access(join(basePath, fileName));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
    * 检查目录是否存在
    */
   private async dirExists(basePath: string, dirName: string): Promise<boolean> {
-    // 简化实现
-    return true;
+    const { access } = await import('fs/promises');
+    const { join } = await import('path');
+
+    try {
+      await access(join(basePath, dirName));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   /**
    * 检查构建脚本
    */
   private async hasBuildScript(projectPath: string): Promise<boolean> {
-    // 简化实现：检查 package.json 中是否有 build 脚本
-    return true;
+    try {
+      const { readFile } = await import('fs/promises');
+      const { join } = await import('path');
+      const pkgJsonPath = join(projectPath, 'package.json');
+      const content = await readFile(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(content);
+      return !!pkg.scripts?.build;
+    } catch {
+      return false;
+    }
   }
 
   /**
    * 检查启动脚本
    */
   private async hasStartScript(projectPath: string): Promise<boolean> {
-    // 简化实现
-    return true;
+    try {
+      const { readFile } = await import('fs/promises');
+      const { join } = await import('path');
+      const pkgJsonPath = join(projectPath, 'package.json');
+      const content = await readFile(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(content);
+      return !!(pkg.scripts?.start || pkg.scripts?.dev);
+    } catch {
+      return false;
+    }
   }
 
   /**
    * 检查 API 路由
    */
   private async hasAPIRoutes(projectPath: string): Promise<boolean> {
-    // 简化实现
+    const { access } = await import('fs/promises');
+    const { join } = await import('path');
+
+    // 常见的 API 路由目录
+    const apiDirs = ['routes', 'api', 'endpoints', 'handlers', 'controllers'];
+
+    for (const dir of apiDirs) {
+      try {
+        const dirPath = join(projectPath, 'src', dir);
+        await access(dirPath);
+        return true;
+      } catch {
+        // 继续检查下一个目录
+      }
+    }
+
     return false;
   }
 }

@@ -55,7 +55,7 @@ export class TypeCheckSkill extends BaseSkill {
   private readonly scoring = {
     errorPenalty: 25,
     warningPenalty: 10,
-    anyPenalty: 5,       // 每个 any 类型扣分
+    anyPenalty: 5, // 每个 any 类型扣分
     maxPenalty: 100,
   };
 
@@ -98,10 +98,13 @@ export class TypeCheckSkill extends BaseSkill {
       };
 
       if (typeCheckResult.passed) {
-        return this.success({
-          testLevel: 'L2',
-          testResult: typeCheckResult,
-        }, `L2 类型检查通过: ${score} 分`);
+        return this.success(
+          {
+            testLevel: 'L2',
+            testResult: typeCheckResult,
+          },
+          `L2 类型检查通过: ${score} 分`
+        );
       } else {
         return {
           code: 400,
@@ -112,10 +115,11 @@ export class TypeCheckSkill extends BaseSkill {
           message: `[${this.meta.name}] L2 检查未通过: ${result.errorCount} 个类型错误`,
         };
       }
-
     } catch (error) {
       logger.error('Type check failed', { error });
-      return this.fatalError(`L2 检查失败: ${error instanceof Error ? error.message : String(error)}`);
+      return this.fatalError(
+        `L2 检查失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -137,40 +141,67 @@ export class TypeCheckSkill extends BaseSkill {
       strictNullChecks: boolean;
     };
   }> {
-    // 模拟类型检查结果
+    const { spawn } = await import('child_process');
+    const { readFile } = await import('fs/promises');
     const issues: TypeCheckResult['errors'] = [];
     let errorCount = 0;
     const warningCount = 0;
+    let anyCount = 0;
+    let unknownCount = 0;
 
-    // 模拟一些类型错误
-    for (const file of files.slice(0, 5)) {
-      if (Math.random() > 0.85) {
+    try {
+      // 运行 tsc --noEmit 获取类型错误
+      const result = await new Promise<{ stdout: string; stderr: string; code: number }>(
+        (resolve) => {
+          const proc = spawn('npx', ['tsc', '--noEmit', '--pretty', 'false'], { shell: true });
+          let stdout = '';
+          let stderr = '';
+
+          proc.stdout?.on('data', (data) => {
+            stdout += data.toString();
+          });
+          proc.stderr?.on('data', (data) => {
+            stderr += data.toString();
+          });
+          proc.on('close', (code) => resolve({ stdout, stderr, code: code || 0 }));
+          proc.on('error', (err) => resolve({ stdout: '', stderr: err.message, code: 1 }));
+        }
+      );
+
+      // 解析 tsc 输出格式: file(line,col): error TS1234: message
+      const output = result.stdout + result.stderr;
+      const errorRegex = /^(.+?)\((\d+),(\d+)\):\s+error\s+(TS\d+):\s+(.+)$/gm;
+      let match;
+
+      while ((match = errorRegex.exec(output)) !== null) {
+        const [, file, line, column, code, message] = match;
         issues.push({
           file,
-          line: Math.floor(Math.random() * 100) + 1,
-          column: Math.floor(Math.random() * 80) + 1,
-          message: "Type 'string' is not assignable to type 'number'",
-          code: 'TS2322',
+          line: parseInt(line, 10),
+          column: parseInt(column, 10),
+          message,
+          code,
           severity: 'error',
-          fixable: true,
-          suggestion: 'Convert string to number or fix type annotation',
+          fixable: false,
+          suggestion: this.getSuggestionForCode(code),
         });
         errorCount++;
       }
 
-      if (Math.random() > 0.9 && strict) {
-        issues.push({
-          file,
-          line: Math.floor(Math.random() * 100) + 1,
-          column: Math.floor(Math.random() * 80) + 1,
-          message: "Object is possibly 'null'",
-          code: 'TS2531',
-          severity: 'error',
-          fixable: true,
-          suggestion: 'Use optional chaining (?.) or null check',
-        });
-        errorCount++;
+      // 统计 any 和 unknown 使用次数
+      for (const file of files.slice(0, 20)) {
+        try {
+          const content = await readFile(file, 'utf-8');
+          const anyMatches = content.match(/:\s*any\b/g);
+          const unknownMatches = content.match(/:\s*unknown\b/g);
+          anyCount += anyMatches?.length || 0;
+          unknownCount += unknownMatches?.length || 0;
+        } catch {
+          // 文件读取失败，忽略
+        }
       }
+    } catch (error) {
+      logger.warn('TypeScript not available', { error });
     }
 
     return {
@@ -179,11 +210,26 @@ export class TypeCheckSkill extends BaseSkill {
       warningCount,
       issues,
       typeStats: {
-        anyCount: Math.floor(Math.random() * 5),
-        unknownCount: Math.floor(Math.random() * 3),
+        anyCount,
+        unknownCount,
         strictNullChecks: strict,
       },
     };
+  }
+
+  /**
+   * 根据错误代码获取修复建议
+   */
+  private getSuggestionForCode(code: string): string {
+    const suggestions: Record<string, string> = {
+      TS2322: '检查类型注解，确保类型匹配',
+      TS2339: '属性不存在于类型上，检查是否拼写错误',
+      TS2531: '对象可能为 null，使用可选链 (?.) 或空检查',
+      TS2532: '对象可能为 undefined，添加 undefined 检查',
+      TS2345: '参数类型不匹配，检查函数调用参数',
+      TS7006: '需要为箭头函数参数指定类型',
+    };
+    return suggestions[code] || '查看 TypeScript 错误文档';
   }
 
   /**
@@ -198,8 +244,8 @@ export class TypeCheckSkill extends BaseSkill {
     const anyCount = result.typeStats?.anyCount || 0;
     const penalty = Math.min(
       result.errorCount * errorPenalty +
-      result.warningCount * warningPenalty +
-      anyCount * anyPenalty,
+        result.warningCount * warningPenalty +
+        anyCount * anyPenalty,
       maxPenalty
     );
     return Math.max(0, 100 - penalty);

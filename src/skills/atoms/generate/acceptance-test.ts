@@ -50,7 +50,7 @@ export class AcceptanceTestSkill extends BaseSkill {
 
   protected async execute(input: SkillInput): Promise<SkillOutput> {
     const params = input.task.params as AcceptanceTestParams;
-    const { 
+    const {
       projectPath = '.',
       requirements = [],
       testPlan,
@@ -86,13 +86,17 @@ export class AcceptanceTestSkill extends BaseSkill {
         };
       }
 
-      return this.success({
-        projectPath,
-        result,
-      }, `验收测试完成: ${result.passedCount}/${result.total} 项通过`);
-
+      return this.success(
+        {
+          projectPath,
+          result,
+        },
+        `验收测试完成: ${result.passedCount}/${result.total} 项通过`
+      );
     } catch (error) {
-      return this.fatalError(`验收测试执行失败: ${error instanceof Error ? error.message : String(error)}`);
+      return this.fatalError(
+        `验收测试执行失败: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
   }
 
@@ -123,9 +127,9 @@ export class AcceptanceTestSkill extends BaseSkill {
     // 生成报告
     const report = this.generateReport(checks, config.reportFormat);
 
-    const passedCount = checks.filter(c => c.status === 'pass').length;
-    const failedCount = checks.filter(c => c.status === 'fail').length;
-    const pendingCount = checks.filter(c => c.status === 'pending').length;
+    const passedCount = checks.filter((c) => c.status === 'pass').length;
+    const failedCount = checks.filter((c) => c.status === 'fail').length;
+    const pendingCount = checks.filter((c) => c.status === 'pending').length;
 
     return {
       passed: failedCount === 0,
@@ -149,7 +153,7 @@ export class AcceptanceTestSkill extends BaseSkill {
   }> {
     return requirements.map((req, index) => {
       let type: 'functional' | 'performance' | 'security' | 'usability' = 'functional';
-      
+
       if (req.toLowerCase().includes('性能') || req.toLowerCase().includes('performance')) {
         type = 'performance';
       } else if (req.toLowerCase().includes('安全') || req.toLowerCase().includes('security')) {
@@ -232,34 +236,165 @@ export class AcceptanceTestSkill extends BaseSkill {
   /**
    * 功能性检查
    */
-  private async checkFunctional(requirement: string, projectPath: string): Promise<'pass' | 'fail' | 'pending'> {
-    // 简化实现：检查需求关键词是否在代码中有对应实现
-    // 实际应该运行功能测试
-    return 'pass';
+  private async checkFunctional(
+    requirement: string,
+    projectPath: string
+  ): Promise<'pass' | 'fail' | 'pending'> {
+    const { readdir, readFile } = await import('fs/promises');
+    const { join } = await import('path');
+
+    try {
+      const keywords = requirement
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((w) => w.length > 3);
+
+      const searchDir = async (dir: string, depth: number = 0): Promise<boolean> => {
+        if (depth > 3) return false;
+
+        try {
+          const entries = await readdir(dir, { withFileTypes: true });
+
+          for (const entry of entries) {
+            if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+            const fullPath = join(dir, entry.name);
+
+            if (entry.isDirectory()) {
+              if (await searchDir(fullPath, depth + 1)) return true;
+            } else if (/\.(ts|tsx|js|jsx)$/.test(entry.name)) {
+              try {
+                const content = (await readFile(fullPath, 'utf-8')).toLowerCase();
+                const matched = keywords.filter((kw) => content.includes(kw));
+                if (matched.length >= Math.min(2, keywords.length)) return true;
+              } catch {}
+            }
+          }
+        } catch {}
+
+        return false;
+      };
+
+      const found = await searchDir(join(projectPath, 'src'));
+      return found ? 'pass' : 'fail';
+    } catch {
+      return 'pending';
+    }
   }
 
   /**
    * 性能检查
    */
-  private async checkPerformance(requirement: string, projectPath: string): Promise<'pass' | 'fail' | 'pending'> {
-    // 简化实现：检查性能相关配置
-    return 'pass';
+  private async checkPerformance(
+    requirement: string,
+    projectPath: string
+  ): Promise<'pass' | 'fail' | 'pending'> {
+    const { access, readFile } = await import('fs/promises');
+    const { join } = await import('path');
+
+    const perfIndicators = ['cache', 'lazy', 'memo', 'optimize', 'gzip', 'compress', 'preload'];
+
+    try {
+      const pkgPath = join(projectPath, 'package.json');
+      const content = await readFile(pkgPath, 'utf-8');
+      const pkg = JSON.parse(content);
+      const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+      const hasPerfDeps = Object.keys(allDeps).some((dep) =>
+        perfIndicators.some((ind) => dep.toLowerCase().includes(ind))
+      );
+
+      if (hasPerfDeps) return 'pass';
+      return 'fail';
+    } catch {
+      return 'pending';
+    }
   }
 
   /**
    * 安全检查
    */
-  private async checkSecurity(requirement: string, projectPath: string): Promise<'pass' | 'fail' | 'pending'> {
-    // 简化实现：检查安全相关配置
-    return 'pass';
+  private async checkSecurity(
+    requirement: string,
+    projectPath: string
+  ): Promise<'pass' | 'fail' | 'pending'> {
+    const { access, readFile } = await import('fs/promises');
+    const { join } = await import('path');
+
+    const secIndicators = ['auth', 'token', 'jwt', 'csrf', 'xss', 'sanitize', 'cors', 'helmet'];
+
+    try {
+      // 检查安全文件
+      const secFiles = ['.env.example', 'security.js', 'cors.js'];
+      for (const file of secFiles) {
+        if (
+          await access(join(projectPath, file))
+            .then(() => true)
+            .catch(() => false)
+        ) {
+          return 'pass';
+        }
+      }
+
+      // 检查安全依赖
+      const pkgPath = join(projectPath, 'package.json');
+      const content = await readFile(pkgPath, 'utf-8');
+      const pkg = JSON.parse(content);
+      const allDeps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+      const hasSecDeps = Object.keys(allDeps).some((dep) =>
+        secIndicators.some((ind) => dep.toLowerCase().includes(ind))
+      );
+
+      if (hasSecDeps) return 'pass';
+      return 'fail';
+    } catch {
+      return 'pending';
+    }
   }
 
   /**
    * 可用性检查
    */
-  private async checkUsability(requirement: string, projectPath: string): Promise<'pass' | 'fail' | 'pending'> {
-    // 简化实现
-    return 'pass';
+  private async checkUsability(
+    requirement: string,
+    projectPath: string
+  ): Promise<'pass' | 'fail' | 'pending'> {
+    const { readdir, readFile } = await import('fs/promises');
+    const { join } = await import('path');
+
+    const a11yIndicators = ['aria', 'alt', 'label', 'placeholder', 'tabindex', 'role'];
+
+    try {
+      const searchDir = async (dir: string, depth: number = 0): Promise<boolean> => {
+        if (depth > 2) return false;
+
+        try {
+          const entries = await readdir(dir, { withFileTypes: true });
+
+          for (const entry of entries) {
+            if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+            const fullPath = join(dir, entry.name);
+
+            if (entry.isDirectory()) {
+              if (await searchDir(fullPath, depth + 1)) return true;
+            } else if (/\.(html|jsx|tsx|vue|css|scss)$/.test(entry.name)) {
+              try {
+                const content = (await readFile(fullPath, 'utf-8')).toLowerCase();
+                const matched = a11yIndicators.filter((ind) => content.includes(ind));
+                if (matched.length >= 2) return true;
+              } catch {}
+            }
+          }
+        } catch {}
+
+        return false;
+      };
+
+      const found = await searchDir(projectPath);
+      return found ? 'pass' : 'fail';
+    } catch {
+      return 'pending';
+    }
   }
 
   /**
