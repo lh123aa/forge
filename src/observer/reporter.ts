@@ -289,7 +289,56 @@ export class ObserverReporter {
    */
   async loadSummary(traceId: string): Promise<RunSummary | null> {
     const summaryPath = `${this.baseDir}/${traceId}/summary.json`;
-    return this.storage.load<RunSummary>(summaryPath);
+    const summary = await this.storage.load<RunSummary>(summaryPath);
+    if (summary) {
+      return summary;
+    }
+
+    // 如果没有 summary.json，尝试从 stage-records.json 构建
+    const records = await this.getAllRecords(traceId);
+    if (records.length > 0) {
+      return this.createSummaryFromRecords(traceId, records);
+    }
+
+    return null;
+  }
+
+  /**
+   * 从阶段记录创建摘要
+   */
+  private async createSummaryFromRecords(traceId: string, stages: StageRecord[]): Promise<RunSummary> {
+    const startTime = stages.length > 0 ? new Date(stages[0].startTime).toISOString() : '';
+    const endTime = stages.length > 0 ? new Date(stages[stages.length - 1].endTime).toISOString() : '';
+    const totalDuration = stages.reduce((sum, s) => sum + s.duration, 0);
+    const overallStatus = stages.every(s => s.status === 'success')
+      ? 'success'
+      : stages.some(s => s.status === 'failed')
+        ? 'failed'
+        : 'partial';
+
+    const summary: RunSummary = {
+      traceId,
+      projectName: 'Unknown',
+      startTime,
+      endTime,
+      totalDuration,
+      stages,
+      overallStatus,
+      userModifications: [],
+    };
+
+    // 保存以便后续使用
+    await this.saveSummary(summary);
+    return summary;
+  }
+
+  /**
+   * 获取所有阶段记录
+   */
+  private async getAllRecords(traceId: string): Promise<StageRecord[]> {
+    const filePath = `${this.baseDir}/${traceId}/stage-records.json`;
+    const records = await this.storage.load<StageRecord[]>(filePath);
+    return records || [];
   }
 
   /**

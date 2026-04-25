@@ -26,7 +26,7 @@ export class KnowledgeBase {
     
     // 1. 关键词精确匹配
     for (const entry of index.entries) {
-      if (entry.keywords.some(kw => query.toLowerCase().includes(kw.toLowerCase()))) {
+      if (entry.keywords && entry.keywords.some(kw => query.toLowerCase().includes(kw.toLowerCase()))) {
         const fullEntry = await this.loadEntry(entry.id);
         if (fullEntry) {
           await this.updateUsage(fullEntry.id);
