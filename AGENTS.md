@@ -1,12 +1,14 @@
-# AGENTS.md — Smart Code Agent
+# AGENTS.md — Forge Code Agent
 
 This file provides coding guidelines and commands for AI agents operating in this repository.
 
 ## Project Overview
 
 - **Type**: Node.js/TypeScript MCP (Model Context Protocol) plugin
+- **Name**: Forge
 - **Runtime**: Node.js 18+, ES2022, ESNext modules
 - **Package Manager**: npm
+- **CLI Command**: `fg`
 - **Structure**: Monorepo with `src/` (TypeScript) and `tests/` directories
 
 ---
@@ -97,7 +99,8 @@ npm test -- --testPathPattern=skill
 - `@typescript-eslint/no-unused-vars`: `warn` (prefix with `_` to ignore)
 - `prefer-const`: `warn`
 - `no-console`: `off`
-- Interface name prefix: `off`
+- `@typescript-eslint/interface-name-prefix`: `off`
+- `@typescript-eslint/ban-ts-comment`: `off`
 
 ---
 
@@ -212,23 +215,6 @@ const error = new SCAError(message, {
 });
 ```
 
-### Error Handler Usage
-
-```typescript
-import { ErrorHandler, globalErrorHandler } from '../utils/error-handler.js';
-
-// Handle error and get result
-const result = errorHandler.handleResult<T>(error, context);
-if (!result.success) {
-  console.error(result.error.toUserMessage());
-}
-
-// Or use the decorator
-import { withErrorHandler } from '../utils/error-handler.js';
-const safeExecute = withErrorHandler(handler, { module: 'MyModule' });
-await safeExecute(() => myFunction());
-```
-
 ---
 
 ## File Structure
@@ -301,49 +287,7 @@ import type { SkillInput } from '../src/types/index.js';
 
 ---
 
-## Common Patterns
-
-### Async/Await with Error Wrapping
-
-```typescript
-async function myFunction(): Promise<Result> {
-  try {
-    const result = await someAsyncOperation();
-    return { success: true, data: result };
-  } catch (error) {
-    throw new SCAError(
-      `Operation failed: ${error instanceof Error ? error.message : String(error)}`,
-      {
-        code: ErrorCode.UNKNOWN,
-        context: { operation: 'myFunction' },
-        cause: error,
-      }
-    );
-  }
-}
-```
-
-### Null-Safe Operations
-
-```typescript
-// Use optional chaining
-const value = obj?.property?.nested?.value ?? 'default';
-
-// Use nullish coalescing for defaults
-const name = input.name ?? 'Anonymous';
-```
-
-### Type Guards
-
-```typescript
-function isSkillOutput(obj: unknown): obj is SkillOutput {
-  return typeof obj === 'object' && obj !== null && 'code' in obj && 'message' in obj;
-}
-```
-
----
-
-## Git Conventions
+## Git & GitHub Conventions
 
 ### Commit Message Format
 
@@ -368,6 +312,90 @@ bugfix/<name>      # Bug fixes
 hotfix/<name>      # urgent fixes
 refactor/<name>    # Code refactoring
 ```
+
+### GitHub Workflow
+
+#### Pull Request Process
+
+1. **Create branch** from `main`:
+
+   ```bash
+   git checkout main && git pull
+   git checkout -b feature/my-feature
+   ```
+
+2. **Make changes** and commit:
+
+   ```bash
+   git add .
+   git commit -m 'feat(scope): describe change'
+   ```
+
+3. **Push and create PR**:
+
+   ```bash
+   git push -u origin feature/my-feature
+   ```
+
+4. **PR Requirements**:
+   - Link related issue: `Closes #123` or `Fixes #456`
+   - Fill PR template completely
+   - Pass all CI checks (lint, test, build)
+   - Get at least 1 review approval
+
+#### Pull Request Template
+
+```markdown
+## Summary
+
+<!-- 1-3 sentence description of changes -->
+
+## Type
+
+- [ ] feat (new feature)
+- [ ] fix (bug fix)
+- [ ] docs (documentation only)
+- [ ] refactor (code restructuring without behavior change)
+- [ ] test (adding/updating tests)
+- [ ] chore (maintenance tasks)
+
+## Testing
+
+<!-- How was this tested? -->
+
+## Checklist
+
+- [ ] Code follows project style guidelines
+- [ ] Lint passes
+- [ ] Tests pass
+- [ ] Types are correct
+```
+
+#### Issue Templates
+
+When creating issues, use these types:
+
+| Type          | Label           | Use for                  |
+| ------------- | --------------- | ------------------------ |
+| `bug`         | Bug report      | Something not working    |
+| `feature`     | Feature request | New functionality        |
+| `enhancement` | Enhancement     | Improve existing feature |
+| `question`    | Question        | Help understanding       |
+| `docs`        | Documentation   | Doc improvements         |
+
+#### Release Process
+
+1. Update version in `package.json`
+2. Create release commit:
+   ```bash
+   git commit -m 'chore(release): bump to v1.2.0'
+   ```
+3. Tag release:
+   ```bash
+   git tag -a v1.2.0 -m 'Release v1.2.0'
+   git push origin main --tags
+   ```
+4. GitHub Actions publishes to npm (if configured)
 
 ---
 

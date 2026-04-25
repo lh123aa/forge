@@ -266,10 +266,14 @@ export class AcceptanceTestSkill extends BaseSkill {
                 const content = (await readFile(fullPath, 'utf-8')).toLowerCase();
                 const matched = keywords.filter((kw) => content.includes(kw));
                 if (matched.length >= Math.min(2, keywords.length)) return true;
-              } catch {}
+              } catch (err) {
+                logger.debug('Error reading file for SEO keywords', { path: fullPath, error: err });
+              }
             }
           }
-        } catch {}
+        } catch (err) {
+          logger.debug('Error searching directory for SEO', { error: err });
+        }
 
         return false;
       };
@@ -382,10 +386,14 @@ export class AcceptanceTestSkill extends BaseSkill {
                 const content = (await readFile(fullPath, 'utf-8')).toLowerCase();
                 const matched = a11yIndicators.filter((ind) => content.includes(ind));
                 if (matched.length >= 2) return true;
-              } catch {}
+              } catch (err) {
+                logger.debug('Error reading file for accessibility', { path: fullPath, error: err });
+              }
             }
           }
-        } catch {}
+        } catch (err) {
+          logger.debug('Error searching directory for accessibility', { error: err });
+        }
 
         return false;
       };

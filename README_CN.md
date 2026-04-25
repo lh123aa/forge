@@ -1,202 +1,193 @@
-# Smart Code Agent
+# Forge
 
-智能代码生成 MCP 插件 - 需求闭环、Skill 插件化、自我学习、观察者迭代
+<div align="center">
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Node.js-18+-green?style=flat-square" alt="Node.js">
-  <img src="https://img.shields.io/badge/TypeScript-5.3-blue?style=flat-square" alt="TypeScript">
-  <img src="https://img.shields.io/badge/License-MIT-orange?style=flat-square" alt="License">
-</p>
+**智能代码生成 MCP 插件**
 
-## 简介
+_需求闭环 • Skill 插件化 • 自我学习 • 观察者迭代_
 
-Smart Code Agent 是一个智能代码生成 MCP (Model Context Protocol) 插件，旨在提供从需求分析到代码生成的完整闭环解决方案。
+[![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=flat-square)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue?style=flat-square)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-MIT-orange?style=flat-square)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-1.0-purple?style=flat-square)](https://modelcontextprotocol.io/)
 
-### 核心特性
+[English](README.md) | [中文文档](README_CN.md)
 
-- 🎯 **需求驱动开发** - 从需求采集到代码生成的完整闭环
-- 🔌 **Skill 插件化** - 可扩展的技能系统，支持自定义 Skill（45+ 内置 Skills）
-- 🧠 **自我学习** - 本地知识库，持续积累开发经验
-- 📊 **观察者模式** - 全程记录运行数据，持续优化
-- 💾 **多种存储** - 支持文件系统存储和 SQLite 数据库
-- 🧪 **完整测试** - 内置测试生成和代码质量检查
-- 🔄 **自动升级** - 检测 GitHub 更新，一键自动升级
-- 🛡️ **质量门禁** - 代码生成后自动质量检查
-- 📡 **接口契约** - 自动生成 OpenAPI 3.0 接口定义
-- 🚢 **部署支持** - 一键部署到多种平台
-- 👥 **团队协作** - 任务分配与代码评审
+</div>
 
-### 架构概览
+---
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      SmartCodeAgent                          │
-├─────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
-│  │    Skill     │  │   Workflow    │  │  Observer    │    │
-│  │   Registry   │  │  Executor     │  │   Recorder   │    │
-│  └──────────────┘  └──────────────┘  └──────────────┘    │
-│                                                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
-│  │  Knowledge   │  │   Storage    │  │   LLM        │    │
-│  │    Base      │  │   (FS/SQL)   │  │   Bridge     │    │
-│  └──────────────┘  └──────────────┘  └──────────────┘    │
-├─────────────────────────────────────────────────────────────┤
-│                        MCP Server                            │
-└─────────────────────────────────────────────────────────────┘
-```
+## ✨ 特性
 
-## 安装
+### 🎯 需求驱动开发
 
-### 方式一：快速安装
+从需求采集到代码生成的完整闭环。支持多种项目类型：页面、API、组件和完整项目。
+
+### 🔌 Skill 插件系统
+
+可扩展的技能架构，**45+ 内置 Skills**。使用 BaseSkill 类轻松创建自定义 Skill。
+
+### 🧠 自我学习
+
+本地知识库，持续积累开发经验。添加、搜索和管理知识条目。
+
+### 📊 观察者模式
+
+全程记录运行数据，持续优化。生成详细报告和执行指标追踪。
+
+### 💾 双存储
+
+支持文件系统存储和 SQLite 数据库。灵活配置适应不同使用场景。
+
+### 🔄 自动更新
+
+自动检测 GitHub 更新。一键升级，失败自动回滚。
+
+### 🧪 完整测试
+
+内置测试生成（单元、集成、验收）。代码质量检查（lint 和类型验证）。
+
+### 🚀 MCP 集成
+
+完整的 MCP (Model Context Protocol) 支持。兼容 OpenCode、Claude Desktop 等 MCP 客户端。
+
+### 🛡️ 质量门禁
+
+代码生成后自动质量检查。可配置 lint、类型检查、测试和安全检查。
+
+### 📡 接口契约
+
+自动生成 OpenAPI 3.0 接口定义。内置 Mock 服务器支持 Express、MSW、JSON-Server。
+
+### 🚢 部署支持
+
+一键部署，构建验证。支持本地、NPM、Docker、SSH、Vercel 和 Netlify。
+
+### 👥 团队协作
+
+任务分配与分解。代码评审自动化（安全、最佳实践、性能检查）。
+
+---
+
+## 📦 安装
+
+### 快速安装
 
 ```bash
-# 克隆项目
-git clone https://github.com/lh123aa/smart-code-agent.git
-cd smart-code-agent
-
-# 安装并构建
-node install.js
-```
-
-### 方式二：手动安装
-
-```bash
-# 安装依赖
+git clone https://github.com/lh123aa/forge.git
+cd forge
 npm install
-
-# 构建项目
 npm run build
-
-# (可选) 全局安装
-npm link
 ```
 
-### 方式三：开发模式
+### 开发模式
 
 ```bash
-# 安装依赖
 npm install
-
-# 监听模式（自动编译）
-npm run dev
-
-# 运行测试
-npm test
+npm run dev    # 监听模式
+npm test       # 运行测试
 ```
 
-## 快速开始
+### 全局 CLI
 
-### 1. 作为库使用
-
-```typescript
-import SmartCodeAgent from './src/plugin.js';
-
-const agent = new SmartCodeAgent();
-await agent.initialize();
-
-// 启动开发流程
-const result = await agent.start({
-  projectType: 'page',        // page | api | component | project
-  initialDemand: '创建一个用户登录页面',
-  projectPath: './my-project',
-});
-
-console.log(result);
-// { traceId: 'xxx', status: 'running', ... }
+```bash
+npm install
+npm run build
+npm link       # 可选：全局安装为 'fg' 命令
 ```
 
-### 2. 使用 CLI
+---
+
+## 🚀 快速开始
+
+### CLI 使用
 
 ```bash
 # 初始化
-sca init
+fg init
 
-# 启动开发流程
-sca start -t page -d "创建一个用户登录页面"
+# 启动开发
+fg start -t page -d "创建一个用户登录页面"
 
-# 列出所有 Skills
-sca list
-```
-
-# 检测更新
-sca update --check
+# 检查更新
+fg update --check
 
 # 执行更新
-sca update
+fg update
 
 # 显示版本
-sca version
+fg version
 ```
 
-### 3. MCP 集成
+### 库使用
 
-参考 `mcp-config.example.json` 配置：
+```typescript
+import Forge from 'forge';
+
+const agent = new Forge();
+await agent.initialize();
+
+const result = await agent.start({
+  projectType: 'page',
+  initialDemand: '创建一个用户登录页面',
+  projectPath: './my-project',
+});
+```
+
+### MCP 集成
 
 ```json
 {
-  "smart-code-agent": {
-    "command": "node",
-    "args": ["/path/to/smart-code-agent/dist/mcp/stdio-server.js"],
-    "description": "智能代码生成插件"
+  "mcpServers": {
+    "forge": {
+      "command": "node",
+      "args": ["/path/to/forge/dist/mcp/stdio-server.js"]
+    }
   }
 }
 ```
 
-## MCP 工具
+---
 
-| 工具 | 描述 | 参数 |
-|------|------|------|
-| `sca-start` | 启动开发流程 | `projectType`, `initialDemand`, `projectPath` |
-| `sca-resume` | 恢复中断的流程 | `traceId` |
-| `sca-get-report` | 获取运行报告 | `traceId` (可选) |
-| `sca-add-knowledge` | 添加知识 | `topic`, `content`, `keywords`, `source` |
-| `sca-search-knowledge` | 搜索知识 | `query` |
-| `sca-list-workflows` | 列出工作流 | - |
-| `sca-run-workflow` | 执行工作流 | `workflowName`, `params` |
-| `sca-submit-feedback` | 提交反馈 | `type`, `content`, `stage`, `traceId` |
-| `sca-check-update` | 检测更新 | - |
-| `sca-do-update` | 执行更新 | `force` (可选) |
+## 🛠️ MCP 工具
 
-### MCP 资源
+| 工具                   | 描述           |
+| ---------------------- | -------------- |
+| `sca-start`            | 启动开发流程   |
+| `sca-resume`           | 恢复中断的流程 |
+| `sca-get-report`       | 获取运行报告   |
+| `sca-add-knowledge`    | 添加知识       |
+| `sca-search-knowledge` | 搜索知识库     |
+| `sca-list-workflows`   | 列出工作流     |
+| `sca-run-workflow`     | 执行工作流     |
+| `sca-submit-feedback`  | 提交反馈       |
+| `sca-check-update`     | 检查更新       |
+| `sca-do-update`        | 执行更新       |
 
-| 资源 URI | 描述 |
-|----------|------|
-| `sca://knowledge` | 知识库 |
-| `sca://runs` | 运行历史 |
-| `sca://workflows` | 工作流定义 |
-| `sca://skills` | 可用 Skills |
-| `sca://statistics` | 运行统计 |
-| `sca://config` | 当前配置 |
+---
 
-## 内置 Skills
-
-### IO 操作
-| Skill | 描述 |
-|-------|------|
-| `read-file` | 读取文件内容 |
-| `write-file` | 写入文件 |
-| `list-dir` | 列出目录内容 |
-| `file-io` | 文件操作组合 |
+## 📚 内置 Skills
 
 ### 代码生成
-| Skill | 描述 |
-|-------|------|
-| `generate-code` | 根据需求生成代码 |
-| `generate-interface` | 生成 OpenAPI 3.0 接口定义 |
-| `generate-test` | 生成测试代码 |
-| `error-fix` | 自动修复错误 |
-| `unit-test` | 单元测试生成 |
-| `integration-test` | 集成测试生成 |
-| `acceptance-test` | 验收测试生成 |
-| `lint` | 代码检查 |
-| `type-check` | 类型检查 |
-| `build-check` | 构建检查 |
-| `test-result-analyzer` | 测试结果分析 |
+
+| Skill                  | 描述                  |
+| ---------------------- | --------------------- |
+| `generate-code`        | 根据需求生成代码      |
+| `generate-interface`   | 生成 OpenAPI 3.0 接口 |
+| `generate-test`        | 生成测试代码          |
+| `unit-test`            | 单元测试生成          |
+| `integration-test`     | 集成测试生成          |
+| `acceptance-test`      | 验收测试生成          |
+| `lint`                 | 代码检查              |
+| `type-check`           | 类型检查              |
+| `build-check`          | 构建检查              |
+| `error-fix`            | 自动修复错误          |
+| `test-result-analyzer` | 测试结果分析          |
 
 ### 需求分析
-| Skill | 描述 |
-|-------|------|
+
+| Skill            | 描述     |
+| ---------------- | -------- |
 | `analyze-demand` | 需求分析 |
 | `demand-collect` | 需求采集 |
 | `demand-confirm` | 需求确认 |
@@ -204,73 +195,61 @@ sca version
 | `smart-analysis` | 智能分析 |
 
 ### 任务规划
-| Skill | 描述 |
-|-------|------|
-| `task-decompose` | 任务拆解 |
-| `task-plan` | 生成执行计划 |
-| `task-confirm` | 确认执行计划 |
-| `task-assign` | 任务分配 |
+
+| Skill            | 描述         |
+| ---------------- | ------------ |
+| `task-decompose` | 任务拆解     |
+| `task-plan`      | 生成执行计划 |
+| `task-confirm`   | 确认执行计划 |
+| `task-assign`    | 任务分配     |
 
 ### 测试与质量
-| Skill | 描述 |
-|-------|------|
-| `test-orchestrator` | 测试编排 |
-| `test-plan` | 生成测试计划 |
-| `test-confirm` | 确认测试计划 |
-| `quality-scorer` | 质量评分 |
-| `test-fix-loop` | 测试修复循环 |
-| `code-review` | 代码评审 |
 
-### 格式转换
-| Skill | 描述 |
-|-------|------|
-| `format-code` | 代码格式化 |
-| `prettier-format` | Prettier 格式化 |
-
-### 观察者
-| Skill | 描述 |
-|-------|------|
-| `observe-record` | 记录运行数据 |
-| `observe-report` | 生成运行报告 |
+| Skill               | 描述           |
+| ------------------- | -------------- |
+| `test-orchestrator` | 测试编排       |
+| `test-plan`         | 生成测试计划   |
+| `test-confirm`      | 确认测试计划   |
+| `quality-scorer`    | 质量评分       |
+| `test-fix-loop`     | 测试修复循环   |
+| `code-review`       | 代码评审自动化 |
 
 ### 工具类
-| Skill | 描述 |
-|-------|------|
-| `wait` | 延迟等待 |
-| `retry` | 失败重试 |
-| `branch` | 条件分支 |
-| `parallel` | 并行执行 |
-| `list-templates` | 列出代码模板 |
-| `mock-server` | Mock 服务器 |
-| `version-manager` | 版本管理 |
-| `deploy` | 部署 |
 
-## 代码模板
+| Skill             | 描述        |
+| ----------------- | ----------- |
+| `read-file`       | 读取文件    |
+| `write-file`      | 写入文件    |
+| `format-code`     | 代码格式化  |
+| `retry`           | 失败重试    |
+| `parallel`        | 并行执行    |
+| `branch`          | 条件分支    |
+| `wait`            | 等待        |
+| `mock-server`     | Mock 服务器 |
+| `version-manager` | 版本管理    |
+| `deploy`          | 部署        |
+
+---
+
+## 📝 代码模板
 
 内置 8 种代码模板：
 
-| 模板 | 描述 | 参数 |
-|------|------|------|
-| `react-component` | React 函数组件 | `name`, `props`, `state`, `hooks` |
-| `vue-component` | Vue 组件 | `name`, `props`, `data`, `methods` |
-| `express-api` | Express REST API | `name`, `routes`, `middleware` |
-| `typescript-type` | TypeScript 类型 | `name`, `fields`, `generics` |
-| `react-hook` | 自定义 Hook | `name`, `state`, `effect`, `callback` |
-| `service` | 业务服务层 | `name`, `crud`, `methods` |
-| `model` | 数据模型 | `name`, `fields`, `relations` |
-| `test` | Jest 测试 | `name`, `cases`, `mock` |
-
-### 使用模板
+| 模板              | 描述             |
+| ----------------- | ---------------- |
+| `react-component` | React 函数组件   |
+| `vue-component`   | Vue 组件         |
+| `express-api`     | Express REST API |
+| `typescript-type` | TypeScript 类型  |
+| `react-hook`      | 自定义 Hook      |
+| `service`         | 业务服务层       |
+| `model`           | 数据模型         |
+| `test`            | Jest 测试文件    |
 
 ```typescript
-import { TemplateManager } from './src/utils/template-manager.js';
+import { TemplateManager } from 'forge';
 
 const tm = new TemplateManager();
-
-// 获取所有模板
-const templates = tm.listTemplates();
-
-// 生成代码
 const code = tm.render('react-component', {
   name: 'UserProfile',
   props: ['user', 'onEdit'],
@@ -278,204 +257,46 @@ const code = tm.render('react-component', {
 });
 ```
 
-## 存储方式
+---
 
-### 文件存储 (默认)
+## 🏗️ 架构
 
-```typescript
-import { FileStorage } from './src/storage/index.js';
-
-const storage = new FileStorage({
-  basePath: './data',  // 数据存储目录
-});
+```
+┌─────────────────────────────────────────────────────────────┐
+│                          Forge                              │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │    Skill     │  │   Workflow   │  │   Observer   │   │
+│  │   Registry   │  │  Executor    │  │   Recorder   │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
+│                                                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │  Knowledge   │  │   Storage    │  │     LLM     │   │
+│  │    Base      │  │   (FS/SQL)   │  │   Bridge    │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
+├─────────────────────────────────────────────────────────────┤
+│                        MCP Server                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### SQLite 存储
+---
 
-```typescript
-import { SQLiteStorage } from './src/storage/index.js';
-
-const sqlite = new SQLiteStorage({
-  dbPath: './data/storage.db',  // 数据库文件路径
-  autoSave: true,               // 自动保存
-  autoSaveInterval: 5000,       // 保存间隔 (ms)
-});
-
-await sqlite.initialize();
-
-// 使用 Key-Value 接口
-await sqlite.set('user:1', { name: '张三' });
-const user = await sqlite.get('user:1');
-
-// 使用数据存储接口
-await sqlite.saveData('user-1', 'user', { name: '张三', age: 25 });
-const data = await sqlite.loadData('user-1');
-
-await sqlite.close();
-```
-
-## 错误处理
-
-### 统一错误类型
-
-```typescript
-import { SCAError, ErrorCode, ErrorSeverity } from './src/types/errors.js';
-
-try {
-  await agent.start({ /* ... */ });
-} catch (error) {
-  if (error instanceof SCAError) {
-    console.log('错误码:', error.code);        // SKILL_NOT_FOUND
-    console.log('严重级别:', error.severity);   // error
-    console.log('恢复建议:', error.suggestions); // [...]
-  }
-}
-```
-
-### 错误码参考
-
-| 范围 | 模块 |
-|------|------|
-| 1000-1099 | 通用错误 |
-| 2000-2099 | Skill 错误 |
-| 3000-3099 | 工作流错误 |
-| 4000-4099 | 存储错误 |
-| 5000-5099 | MCP 错误 |
-| 6000-6099 | 知识库错误 |
-| 7000-7099 | 模板错误 |
-
-## 重试策略
-
-```typescript
-import { RetryStrategy, retryPresets } from './src/utils/retry-strategy.js';
-
-// 方式一：自定义配置
-const retry = new RetryStrategy({
-  maxAttempts: 3,           // 最大重试次数
-  baseDelay: 1000,          // 基础延迟 (ms)
-  backoffMultiplier: 2,     // 退避倍数
-  jitter: true,             // 添加随机抖动
-  timeout: 30000,           // 超时时间
-});
-
-const result = await retry.execute(async () => {
-  // 可能失败的操作
-  return await riskyOperation();
-});
-
-// 方式二：使用预设
-const fastRetry = new RetryStrategy(retryPresets.fast);
-const slowRetry = new RetryStrategy(retryPresets.conservative);
-```
-
-### 预设配置
-
-| 预设 | 描述 | 配置 |
-|------|------|------|
-| `fast` | 快速重试 | 3次, 100ms, 2x |
-| `slow` | 慢速重试 | 5次, 2000ms, 2x |
-| `conservative` | 保守重试 | 3次, 1000ms, 1.5x |
-| `once` | 仅一次 | 2次, 0ms, 1x |
-
-## 缓存管理
-
-```typescript
-import { CacheManager } from './src/utils/cache-manager.js';
-
-const cache = new CacheManager({
-  maxSize: 100,      // 最大缓存数
-  defaultTTL: 60000, // 默认过期时间 (ms)
-});
-
-// 基础用法
-cache.set('key', 'value');
-const value = cache.get('key');
-
-// 带过期时间
-cache.set('temp', 'data', 5000); // 5秒后过期
-
-// 懒加载
-const data = cache.getOrSet('key', () => fetchData());
-
-// 异步懒加载
-const asyncData = await cache.getOrSetAsync('key', () => fetchDataAsync());
-```
-
-## 自定义 Skill 开发
-
-### 1. 创建 Skill 文件
-
-```typescript
-// src/skills/atoms/custom/my-skill.ts
-import { BaseSkill, type SkillResult } from '../../base.skill.js';
-
-export class MySkill extends BaseSkill {
-  name = 'my-skill';
-  description = '我的自定义 Skill';
-  category = 'custom';
-  
-  async execute(input: Record<string, unknown>): Promise<SkillResult> {
-    const param = input.param as string;
-    
-    // 业务逻辑
-    const result = doSomething(param);
-    
-    return {
-      success: true,
-      output: { result },
-      metadata: {
-        skill: this.name,
-        duration: 0,
-      },
-    };
-  }
-}
-
-export default new MySkill();
-```
-
-### 2. 注册 Skill
-
-```typescript
-// 在 plugin.ts 或单独的配置中
-import mySkill from './skills/atoms/custom/my-skill.js';
-
-agent.registerSkill(mySkill);
-```
-
-### 3. 使用 Skill
-
-```typescript
-const result = await agent.executeSkill('my-skill', {
-  param: 'value',
-});
-```
-
-## 配置
+## 🔧 配置
 
 ### 环境变量
 
-| 变量 | 描述 | 默认值 |
-|------|------|--------|
+| 变量            | 描述         | 默认值   |
+| --------------- | ------------ | -------- |
 | `SCA_DATA_PATH` | 数据存储路径 | `./data` |
-| `SCA_LOG_LEVEL` | 日志级别 | `info` |
-| `SCA_TEMPLATE_PATH` | 模板路径 | 内置模板 |
+| `SCA_LOG_LEVEL` | 日志级别     | `info`   |
 
-### 配置文件
-
-创建 `.sca/config.json`：
+### 配置文件 (`.sca/config.json`)
 
 ```json
 {
   "version": "1.0.0",
   "dataPath": "./data",
   "logLevel": "info",
-  "autoSave": true,
-  "templates": [
-    "react-component",
-    "vue-component",
-    "express-api"
-  ],
   "skills": {
     "enabled": ["*"],
     "disabled": []
@@ -486,153 +307,137 @@ const result = await agent.executeSkill('my-skill', {
 }
 ```
 
-## 运行测试
+---
 
-```bash
-# 运行所有测试
-npm test
-
-# 监听模式（文件变化自动运行）
-npm run test:watch
-
-# 生成覆盖率报告
-npm run test:coverage
-
-# 运行特定测试文件
-npm test -- skill-executor.test.ts
-```
-
-## 项目结构
+## 📂 项目结构
 
 ```
-smart-code-agent/
+forge/
 ├── src/
 │   ├── index.ts              # 入口文件
 │   ├── plugin.ts             # 主插件类
-│   ├── bin/
-│   │   └── cli.ts           # CLI 入口
-│   ├── skill-engine/         # Skill 引擎
-│   │   ├── executor.ts      # Skill 执行器
-│   │   ├── registry.ts      # Skill 注册表
-│   │   ├── parser.ts        # Skill 解析器
-│   │   ├── validator.ts     # Skill 验证器
-│   │   ├── composer.ts      # Skill 组合器
-│   │   ├── state.ts         # 状态管理
-│   │   └── workflow-executor.ts
-│   ├── skills/              # 内置 Skills
-│   │   ├── base.skill.ts   # Skill 基类
-│   │   ├── atoms/           # 原子 Skills
-│   │   │   ├── io/         # IO 操作
-│   │   │   ├── generate/   # 代码生成
-│   │   │   ├── analyze/    # 需求分析
-│   │   │   ├── format/     # 格式转换
-│   │   │   ├── observe/    # 观察者
-│   │   │   ├── search/     # 搜索
-│   │   │   └── utility/    # 工具类
-│   │   └── workflows/       # 工作流 Skills
-│   ├── storage/             # 存储层
-│   │   ├── index.ts        # 文件存储
-│   │   └── sqlite-storage.ts
-│   ├── knowledge/          # 知识库
-│   │   └── base.ts
-│   ├── observer/           # 观察者
-│   │   ├── recorder.ts     # 记录器
-│   │   ├── reporter.ts     # 报告器
-│   │   └── user-modifications.ts
-│   ├── mcp/                # MCP 协议
-│   │   ├── server.ts       # MCP 服务器
-│   │   ├── tools.ts        # 工具定义
-│   │   ├── resources.ts    # 资源定义
-│   │   └── llm-bridge.ts  # LLM 桥接
-│   └── utils/              # 工具函数
-│       ├── logger.ts       # 日志
-│       ├── cache-manager.ts
-│       ├── error-handler.ts
-│       ├── retry-strategy.ts
-│       └── template-manager.ts
-├── tests/                  # 测试文件
-├── data/                   # 数据目录
-├── install.js             # 安装脚本
-├── uninstall.js           # 卸载脚本
+│   ├── bin/cli.ts            # CLI 接口
+│   ├── skill-engine/         # Skill 执行引擎
+│   ├── skills/               # 内置 Skills
+│   ├── storage/              # 存储层
+│   ├── knowledge/            # 知识库
+│   ├── observer/             # 观察者模式
+│   ├── mcp/                  # MCP 服务器
+│   └── utils/                # 工具函数
+├── tests/                    # 测试文件
 └── package.json
 ```
 
-## 常见问题
+---
 
-### Q: 如何添加新的代码模板？
+## 🔌 自定义 Skill 开发
 
-A: 编辑 `src/utils/template-manager.ts`，在 `getTemplates()` 方法中添加新模板。
+```typescript
+// src/skills/atoms/custom/my-skill.ts
+import { BaseSkill, type SkillResult } from '../../base.skill.js';
 
-### Q: 如何禁用某个 Skill？
+export class MySkill extends BaseSkill {
+  name = 'my-skill';
+  description = '我的自定义 Skill';
+  category = 'custom';
 
-A: 在配置文件中设置：
-
-```json
-{
-  "skills": {
-    "disabled": ["lint", "type-check"]
+  async execute(input: Record<string, unknown>): Promise<SkillResult> {
+    return {
+      success: true,
+      output: { result: 'Done' },
+      metadata: { skill: this.name, duration: 0 },
+    };
   }
 }
+
+export default new MySkill();
 ```
 
-### Q: 如何自定义工作流？
+---
 
-A: 参考 `src/skill-engine/workflows/` 中的示例，创建新的 workflow 文件。
+## ❓ 常见问题
 
-### Q: 支持哪些 IDE？
+**Q: 支持哪些 IDE？**  
+A: 支持 MCP 协议的 IDE：VS Code (需 MCP 扩展)、Cursor、Zed、Claude Desktop、OpenCode。
 
-A: 支持 MCP 协议的 IDE 均可使用，如：
-- VS Code (需 MCP 扩展)
-- Cursor
-- Zed
-- 其他支持 MCP 的编辑器
+**Q: 如何添加自定义模板？**  
+A: 编辑 `src/utils/template-manager.ts`，在 `getTemplates()` 方法中添加新模板。
 
-## 贡献
+**Q: 如何禁用某个 Skill？**  
+A: 在配置文件的 `skills.disabled` 数组中添加技能名称。
+
+---
+
+## 🤝 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
 1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/xxx`)
-3. 提交更改 (`git commit -m 'feat: 添加 xxx'`)
-4. 推送分支 (`git push origin feature/xxx`)
+2. 创建特性分支 (`git checkout -b feature/amazing`)
+3. 提交更改 (`git commit -m 'feat: add amazing feature'`)
+4. 推送分支 (`git push origin feature/amazing`)
 5. 创建 Pull Request
-
-## 更新日志
-
-### v1.1.0 (2026-03-12)
-
-- ✅ **接口契约模块** - 自动生成 OpenAPI 3.0 接口定义文档
-- ✅ **Mock 服务器** - 内置 Mock 服务支持 Express、MSW、JSON-Server
-- ✅ **质量门禁自动化** - 代码生成后自动质量检查
-- ✅ **构建检查** - 部署前构建验证
-- ✅ **版本管理** - 语义化版本支持
-- ✅ **部署支持** - 一键部署到本地、NPM、Docker、SSH、Vercel、Netlify
-- ✅ **任务分配** - 需求拆解与团队任务分配
-- ✅ **代码评审** - 自动化代码评审（安全、最佳实践、性能检查）
-- ✅ **协作存储** - 扩展 SQLite 支持团队协作
-- ✅ **45+ 内置 Skills** - 从 30+ 增加到 45+
-
-### v1.0.0 (2026-02-22)
-
- ✅ 初始版本发布
- ✅ 需求闭环支持
- ✅ Skill 插件系统
- ✅ 知识库模块
- ✅ 观察者模式
- ✅ 文件/SQLite 双存储
- ✅ 错误处理系统
- ✅ 重试策略
- ✅ 代码模板库
- ✅ CLI 工具
- ✅ 安装/卸载脚本
- ✅ **自动升级功能** - 检测 GitHub 更新，一键自动升级
- ✅ **MCP stdio 服务器** - 支持 OpenCode/Claude 集成
-
-
-## 许可证
-
-MIT License - 请随意使用和修改
 
 ---
 
-<p align="center">Made with ❤️ by Smart Code Agent</p>
+## 📄 许可证
+
+[MIT License](LICENSE) - 请随意使用和修改
+
+---
+
+## 📋 更新日志
+
+### v1.2.1 (2026-04-25)
+
+- ✅ **OpenCode MCP 系统支持**: 全面升级 OpenCode MCP 集成，调试能力增强
+- ✅ **自我迭代引擎**: 新增 SelfIterationEngine，支持自动优化和工作流进化
+- ✅ **调试能力完善**: Logger 系统增强、错误处理优化、观察者模式改进
+- ✅ **代码质量改进**: 修复 4 个 lint empty block errors，测试全部通过
+- ✅ **新增 Forge MCP 工具**: `forge-route`, `forge-list-skills`, `forge-invoke-skill`, `forge-list-workflows`, `forge-self-iterate`
+- ✅ **新增核心模块**: `src/core/` 目录包含 skill-router, routing-rules, knowledge-bridge, external-skill-loader
+- ✅ **测试完善**: 9 个测试套件，95 个测试用例全部通过
+- ✅ **构建优化**: TypeScript 编译优化，产物更稳定
+
+### v1.2.0 (2026-03-30)
+
+- ✅ **Forge 重塑品牌**：项目重命名和组织结构重组
+- ✅ **CLI 更新**：新命令 `fg`（原 `sca`）
+
+### v1.1.0 (2026-03-12)
+
+- ✅ **接口契约模块**：自动生成 OpenAPI 3.0 接口定义
+- ✅ **Mock 服务器支持**：内置 Express、MSW、JSON-Server Mock 服务
+- ✅ **质量门禁自动化**：代码生成后自动质量检查
+- ✅ **构建检查**：部署前构建验证
+- ✅ **版本管理**：语义化版本支持
+- ✅ **部署支持**：一键部署到本地、NPM、Docker、SSH、Vercel、Netlify
+- ✅ **任务分配**：需求拆解与团队任务分配
+- ✅ **代码评审**：自动化代码评审（安全、最佳实践、性能检查）
+- ✅ **协作存储**：扩展 SQLite 支持团队协作
+- ✅ **45+ 内置 Skills**：从 30+ 增加到 45+
+
+### v1.0.0 (2026-02-22)
+
+- ✅ 初始版本发布
+- ✅ 需求闭环支持
+- ✅ Skill 插件系统
+- ✅ 知识库模块
+- ✅ 观察者模式
+- ✅ 文件/SQLite 双存储
+- ✅ 错误处理系统
+- ✅ 重试策略
+- ✅ 代码模板库
+- ✅ CLI 工具
+- ✅ 自动升级功能
+- ✅ MCP stdio 服务器
+
+---
+
+<div align="center">
+
+**Made with ❤️ by Forge**
+
+[GitHub](https://github.com/lh123aa/forge) • [报告 Bug](https://github.com/lh123aa/forge/issues) • [请求功能](https://github.com/lh123aa/forge/issues)
+
+</div>

@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "smart-code-agent": {
+    "forge": {
       "command": "node",
-      "args": ["E:/程序/forge/dist/mcp/stdio-server.js"],
+      "args": ["${workspaceFolder}/dist/mcp/stdio-server.js"],
       "env": {}
     }
   }

@@ -1,4 +1,4 @@
-# Smart Code Agent
+# Forge
 
 <div align="center">
 
@@ -74,17 +74,10 @@ Task assignment and decomposition. Code review automation with security, best-pr
 ### Quick Install
 
 ```bash
-git clone https://github.com/lh123aa/smart-code-agent.git
-cd smart-code-agent
-node install.js
-```
-
-### Manual Install
-
-```bash
+git clone https://github.com/lh123aa/forge.git
+cd forge
 npm install
 npm run build
-npm link  # Optional: global CLI
 ```
 
 ### Development Mode
@@ -95,6 +88,14 @@ npm run dev    # Watch mode
 npm test       # Run tests
 ```
 
+### Global CLI
+
+```bash
+npm install
+npm run build
+npm link       # Optional: global CLI as 'fg'
+```
+
 ---
 
 ## 🚀 Quick Start
@@ -103,27 +104,27 @@ npm test       # Run tests
 
 ```bash
 # Initialize
-sca init
+fg init
 
 # Start development
-sca start -t page -d "Create a user login page"
+fg start -t page -d "Create a user login page"
 
 # Check for updates
-sca update --check
+fg update --check
 
 # Perform update
-sca update
+fg update
 
 # Show version
-sca version
+fg version
 ```
 
 ### Library Usage
 
 ```typescript
-import SmartCodeAgent from 'smart-code-agent';
+import Forge from 'forge';
 
-const agent = new SmartCodeAgent();
+const agent = new Forge();
 await agent.initialize();
 
 const result = await agent.start({
@@ -138,9 +139,9 @@ const result = await agent.start({
 ```json
 {
   "mcpServers": {
-    "smart-code-agent": {
+    "forge": {
       "command": "node",
-      "args": ["/path/to/smart-code-agent/dist/mcp/stdio-server.js"]
+      "args": ["/path/to/forge/dist/mcp/stdio-server.js"]
     }
   }
 }
@@ -169,64 +170,64 @@ const result = await agent.start({
 
 ### Code Generation
 
-| Skill              | Description                     |
-| ------------------ | ------------------------------- |
-| `generate-code`    | Generate code from requirements |
-| `generate-interface` | Generate OpenAPI 3.0 interface |
-| `generate-test`    | Generate test code              |
-| `unit-test`        | Unit test generation            |
-| `integration-test` | Integration test generation     |
-| `acceptance-test`  | Acceptance test generation      |
-| `lint`             | Code linting                    |
-| `type-check`       | TypeScript type checking        |
-| `build-check`      | Build verification              |
-| `error-fix`        | Auto-fix code errors            |
-| `test-result-analyzer` | Analyze test failures        |
+| Skill                  | Description                     |
+| ---------------------- | ------------------------------- |
+| `generate-code`        | Generate code from requirements |
+| `generate-interface`   | Generate OpenAPI 3.0 interface  |
+| `generate-test`        | Generate test code              |
+| `unit-test`            | Unit test generation            |
+| `integration-test`     | Integration test generation     |
+| `acceptance-test`      | Acceptance test generation      |
+| `lint`                 | Code linting                    |
+| `type-check`           | TypeScript type checking        |
+| `build-check`          | Build verification              |
+| `error-fix`            | Auto-fix code errors            |
+| `test-result-analyzer` | Analyze test failures           |
 
 ### Requirement Analysis
 
-| Skill            | Description              |
-| ---------------- | ------------------------ |
-| `analyze-demand` | Requirement analysis     |
-| `demand-collect` | Requirement collection   |
-| `demand-confirm` | Requirement confirmation |
+| Skill            | Description               |
+| ---------------- | ------------------------- |
+| `analyze-demand` | Requirement analysis      |
+| `demand-collect` | Requirement collection    |
+| `demand-confirm` | Requirement confirmation  |
 | `demand-clarify` | Requirement clarification |
-| `smart-analysis` | Smart analysis with knowledge base |
+| `smart-analysis` | Smart analysis            |
 
 ### Task Planning
 
-| Skill            | Description              |
-| ---------------- | ------------------------ |
+| Skill            | Description             |
+| ---------------- | ----------------------- |
 | `task-decompose` | Decompose requirements  |
 | `task-plan`      | Generate execution plan |
-| `task-confirm`   | Confirm task plan        |
-| `task-assign`    | Assign tasks to team     |
+| `task-confirm`   | Confirm task plan       |
+| `task-assign`    | Assign tasks to team    |
 
 ### Testing & Quality
 
-| Skill              | Description                     |
-| ------------------ | ------------------------------- |
-| `test-orchestrator`| Test orchestration              |
-| `test-plan`       | Generate test plan             |
-| `test-confirm`    | Confirm test plan              |
-| `quality-scorer`  | Calculate quality score         |
-| `test-fix-loop`  | Test-fix iteration             |
-| `code-review`     | Code review automation          |
+| Skill               | Description             |
+| ------------------- | ----------------------- |
+| `test-orchestrator` | Test orchestration      |
+| `test-plan`         | Generate test plan      |
+| `test-confirm`      | Confirm test plan       |
+| `quality-scorer`    | Calculate quality score |
+| `test-fix-loop`     | Test-fix iteration      |
+| `code-review`       | Code review automation  |
 
 ### Utilities
 
-| Skill         | Description        |
-| ------------- | ------------------ |
-| `read-file`   | Read file content  |
-| `write-file`  | Write file         |
-| `format-code` | Code formatting    |
-| `retry`       | Retry on failure   |
-| `parallel`    | Parallel execution |
-| `branch`      | Conditional branch |
-| `wait`        | Wait/sleep         |
-| `mock-server` | Mock server        |
+| Skill             | Description        |
+| ----------------- | ------------------ |
+| `read-file`       | Read file content  |
+| `write-file`      | Write file         |
+| `format-code`     | Code formatting    |
+| `retry`           | Retry on failure   |
+| `parallel`        | Parallel execution |
+| `branch`          | Conditional branch |
+| `wait`            | Wait/sleep         |
+| `mock-server`     | Mock server        |
 | `version-manager` | Version management |
-| `deploy`      | Deployment         |
+| `deploy`          | Deployment         |
 
 ---
 
@@ -246,7 +247,7 @@ const result = await agent.start({
 | `test`            | Jest test file             |
 
 ```typescript
-import { TemplateManager } from 'smart-code-agent';
+import { TemplateManager } from 'forge';
 
 const tm = new TemplateManager();
 const code = tm.render('react-component', {
@@ -262,17 +263,17 @@ const code = tm.render('react-component', {
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      SmartCodeAgent                          │
+│                          Forge                              │
 ├─────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
-│  │    Skill     │  │   Workflow    │  │  Observer    │    │
-│  │   Registry   │  │  Executor     │  │   Recorder   │    │
-│  └──────────────┘  └──────────────┘  └──────────────┘    │
-│                                                             │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
-│  │  Knowledge   │  │   Storage    │  │   LLM        │    │
-│  │    Base      │  │   (FS/SQL)   │  │   Bridge     │    │
-│  └──────────────┘  └──────────────┘  └──────────────┘    │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │    Skill     │  │   Workflow   │  │   Observer   │   │
+│  │   Registry   │  │  Executor    │  │   Recorder   │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
+│                                                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │  Knowledge   │  │   Storage    │  │     LLM     │   │
+│  │    Base      │  │   (FS/SQL)   │  │   Bridge    │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘   │
 ├─────────────────────────────────────────────────────────────┤
 │                        MCP Server                            │
 └─────────────────────────────────────────────────────────────┘
@@ -311,7 +312,7 @@ const code = tm.render('react-component', {
 ## 📂 Project Structure
 
 ```
-smart-code-agent/
+forge/
 ├── src/
 │   ├── index.ts              # Entry point
 │   ├── plugin.ts             # Main plugin class
@@ -320,11 +321,10 @@ smart-code-agent/
 │   ├── skills/               # Built-in skills
 │   ├── storage/              # Storage layer
 │   ├── knowledge/            # Knowledge base
-│   ├── observer/             # Observer pattern
+│   ├── observer/              # Observer pattern
 │   ├── mcp/                  # MCP server
 │   └── utils/                # Utilities
 ├── tests/                    # Test files
-├── install.js                # Install script
 └── package.json
 ```
 
@@ -388,6 +388,22 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📋 Changelog
 
+### v1.2.1 (2026-04-25)
+
+- ✅ **OpenCode MCP 系统支持**: 全面升级 OpenCode MCP 集成，调试能力增强
+- ✅ **自我迭代引擎**: 新增 SelfIterationEngine，支持自动优化和工作流进化
+- ✅ **调试能力完善**: Logger 系统增强、错误处理优化、观察者模式改进
+- ✅ **代码质量改进**: 修复 4 个 lint empty block errors，121 warnings → 122 warnings
+- ✅ **新增 Forge MCP 工具**: `forge-route`, `forge-list-skills`, `forge-invoke-skill`, `forge-list-workflows`, `forge-self-iterate`
+- ✅ **新增核心模块**: `src/core/` 目录包含 skill-router, routing-rules, knowledge-bridge, external-skill-loader
+- ✅ **测试完善**: 9 个测试套件，95 个测试用例全部通过
+- ✅ **构建优化**: TypeScript 编译优化，产物更稳定
+
+### v1.2.0 (2026-03-30)
+
+- ✅ **Forge Rebrand**: Complete project rename and reorganization
+- ✅ **CLI Update**: New `fg` command (formerly `sca`)
+
 ### v1.1.0 (2026-03-12)
 
 - ✅ **Interface Contract Module**: Generate OpenAPI 3.0 interface definitions
@@ -421,8 +437,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 <div align="center">
 
-**Made with ❤️ by Smart Code Agent**
+**Made with ❤️ by Forge**
 
-[GitHub](https://github.com/lh123aa/smart-code-agent) • [Report Bug](https://github.com/lh123aa/smart-code-agent/issues) • [Request Feature](https://github.com/lh123aa/smart-code-agent/issues)
+[GitHub](https://github.com/lh123aa/forge) • [Report Bug](https://github.com/lh123aa/forge/issues) • [Request Feature](https://github.com/lh123aa/forge/issues)
 
 </div>

@@ -12,10 +12,7 @@ import { checkUpdate, doUpdate, getCurrentVersion } from '../utils/updater.js';
 const logger = createLogger('CLI');
 const program = new Command();
 
-program
-  .name('sca')
-  .description('Smart Code Agent - 智能代码生成 MCP 插件')
-  .version(getCurrentVersion());
+program.name('fg').description('Forge - 智能代码生成 MCP 插件').version(getCurrentVersion());
 
 program
   .command('init')
@@ -69,9 +66,9 @@ program
   .description('知识库操作')
   .action(() => {
     console.log('知识库命令:');
-    console.log('  sca knowledge add --topic <主题> --content <内容>');
-    console.log('  sca knowledge search --query <关键词>');
-    console.log('  sca knowledge list');
+    console.log('  fg knowledge add --topic <主题> --content <内容>');
+    console.log('  fg knowledge search --query <关键词>');
+    console.log('  fg knowledge list');
   });
 
 program
@@ -84,7 +81,7 @@ program
       // 仅检测更新
       console.log('正在检查更新...\n');
       const result = await checkUpdate();
-      
+
       if (result.hasUpdate) {
         console.log('✨ 发现新版本!');
         console.log(`   当前版本: ${result.currentVersion}`);
@@ -93,7 +90,7 @@ program
           console.log('\n📝 更新日志:');
           console.log(result.releaseNotes);
         }
-        console.log('\n运行 `sca update` 来安装更新');
+        console.log('\n运行 `fg update` 来安装更新');
       } else {
         console.log('✅ 已是最新版本');
         console.log(`   当前版本: ${result.currentVersion}`);
@@ -102,13 +99,13 @@ program
       // 执行更新
       console.log('正在检查更新...\n');
       const checkResult = await checkUpdate();
-      
+
       if (!checkResult.hasUpdate && !options.force) {
         console.log('✅ 已是最新版本');
         console.log(`   当前版本: ${checkResult.currentVersion}`);
         return;
       }
-      
+
       if (checkResult.hasUpdate) {
         console.log('✨ 发现新版本!');
         console.log(`   当前版本: ${checkResult.currentVersion}`);
@@ -118,10 +115,10 @@ program
           console.log(checkResult.releaseNotes);
         }
       }
-      
+
       console.log('\n正在更新...\n');
       const result = await doUpdate();
-      
+
       if (result.success) {
         console.log('\n✅ 更新成功!');
         console.log(`   ${result.fromVersion} → ${result.toVersion}`);
@@ -129,7 +126,7 @@ program
       } else {
         console.log('\n❌ 更新失败');
         console.log(`   错误: ${result.error}`);
-        result.logs.forEach(log => console.log(`   ${log}`));
+        result.logs.forEach((log) => console.log(`   ${log}`));
       }
     }
   });
@@ -141,6 +138,5 @@ program
     const version = getCurrentVersion();
     console.log(`Smart Code Agent v${version}`);
   });
-
 
 program.parse(process.argv);
