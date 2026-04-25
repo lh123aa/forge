@@ -29,11 +29,31 @@ export class SkillRegistry {
   private categories: Map<SkillCategory, Set<string>> = new Map();
   private options: SkillRegistryOptions;
 
+  // 单例实例
+  private static _defaultInstance: SkillRegistry | null = null;
+
   constructor(options?: SkillRegistryOptions) {
     this.options = {
       autoLoadBuiltin: true,
       ...options,
     };
+  }
+
+  /**
+   * 获取全局默认实例（单例）
+   */
+  static getInstance(): SkillRegistry {
+    if (!SkillRegistry._defaultInstance) {
+      SkillRegistry._defaultInstance = new SkillRegistry();
+    }
+    return SkillRegistry._defaultInstance;
+  }
+
+  /**
+   * 重置全局实例（用于测试）
+   */
+  static resetInstance(): void {
+    SkillRegistry._defaultInstance = null;
   }
 
   /**
@@ -176,4 +196,5 @@ export class SkillRegistry {
   }
 }
 
-export default SkillRegistry;
+// 导出默认实例（单例），便于直接使用
+export default SkillRegistry.getInstance();
