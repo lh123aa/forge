@@ -388,6 +388,25 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📋 Changelog
 
+### v1.4.0 (2026-04-26)
+
+- ✅ **Q2-P0 工作流可视化**: 新增完整的工作流实时可视化系统
+  - `WorkflowObserver`: 工作流事件发布（started/step-started/step-completed/step-failed/completed/snapshot）
+  - `VisualizationServer`: WebSocket 服务端（端口 3456），支持实时推送工作流状态快照
+  - `public/visualization.html`: DAG 可视化客户端，实时展示节点/边/Skill I/O
+  - 支持导出工作流快照为 JSON
+- ✅ **Q2-P0 错误恢复智能化**: 增强的错误分类与自适应恢复系统
+  - `EnhancedSCAError`: 10 大错误分类（NetworkError、AuthError、TimeoutError、RateLimitError、CircuitOpenError、ValidationError、DependencyError、ResourceError、ConfigError、UnknownError）
+  - 50+ 错误子码，完整的 cause chain 追踪
+  - `CircuitBreaker`: 熔断器模式（CLOSED/OPEN/HALF_OPEN 三态），自动熔断高频失败操作
+  - `AutoRecoverySuggestionGenerator`: 按错误分类自动生成恢复建议
+  - `isRetryable()`、`shouldCircuitBreak()` 辅助函数
+- ✅ **Q2-P1 模板系统增强**: 用户自定义模板管理
+  - `UserTemplateManager`: 支持用户上传、注册、列出、删除自定义模板
+  - 模板变量插值渲染
+  - 与现有 TemplateManager 无缝集成
+- ✅ **构建验证**: 95/95 测试通过，0 lint warnings
+
 ### v1.3.0 (2026-04-26)
 
 - ✅ **P0 安全增强**: 新增 SecurityAnalyzer 模块，集成 Semgrep 静态分析
