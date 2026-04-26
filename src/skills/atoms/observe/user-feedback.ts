@@ -18,9 +18,10 @@ export class UserFeedbackSkill extends BaseSkill {
   };
 
   protected async execute(input: SkillInput): Promise<SkillOutput> {
-    const { 
+    const {
       type = 'suggestion',  // 反馈类型: bug, suggestion, question
-      content,             // 反馈内容
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      content: _content,             // 反馈内容
       stage,               // 关联阶段
     } = input.task.params as {
       type?: 'bug' | 'suggestion' | 'question';

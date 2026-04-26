@@ -103,7 +103,8 @@ export class DemandAnalysisSkill extends BaseSkill {
   };
 
   protected async execute(input: SkillInput): Promise<SkillOutput> {
-    const { params } = input.task;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _params = input.task.params;
     
     // 从上下文获取澄清后的需求
     const collectedDemand = input.context.readOnly.collectedDemand as Record<string, unknown> | undefined;
@@ -196,8 +197,8 @@ export class DemandAnalysisSkill extends BaseSkill {
    * 提取项目名称
    */
   private extractProjectName(
-    demandData: Record<string, unknown>, 
-    answers: Record<string, unknown>
+    demandData: Record<string, unknown>,
+    _answers: Record<string, unknown>
   ): string {
     if (demandData.name) return demandData.name as string;
     
@@ -338,7 +339,7 @@ export class DemandAnalysisSkill extends BaseSkill {
    */
   private generateUserScenarios(
     demandData: Record<string, unknown>,
-    answers: Record<string, unknown>
+    _answers: Record<string, unknown>
   ): DemandReport['userScenarios'] {
     const scenarios: DemandReport['userScenarios'] = [];
     const projectType = demandData.projectType as string;
@@ -431,7 +432,7 @@ export class DemandAnalysisSkill extends BaseSkill {
     const reqs: Array<Omit<DemandReport['functionalRequirements'][0], 'id'>> = [];
     
     // 画布/画板特殊功能
-    const desc = (answers as any).originalDemand || '';
+    const desc = String((answers as Record<string, unknown>).originalDemand || '');
     if (desc.includes('画布') || desc.includes('画板')) {
       reqs.push(
         {

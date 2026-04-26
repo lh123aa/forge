@@ -194,7 +194,7 @@ export class VersionManagerSkill extends BaseSkill {
   /**
    * 读取当前版本
    */
-  private async readVersion(projectPath: string): Promise<VersionInfo> {
+  private async readVersion(_projectPath: string): Promise<VersionInfo> {
     // 模拟从 package.json 读取版本
     // 实际应读取 package.json 文件
     const mockVersion = '1.0.0';

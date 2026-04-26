@@ -180,7 +180,7 @@ export class TaskPlanSkill extends BaseSkill {
    */
   private createPhases(
     tasks: Array<{ id: string; name: string; category: string; estimatedHours: number; dependencies: string[] }>,
-    taskGroups: { name: string; tasks: string[] }[]
+    _taskGroups: { name: string; tasks: string[] }[]
   ): ExecutionPhase[] {
     const phases: ExecutionPhase[] = [];
     const categoryToPhase: Record<string, string> = {

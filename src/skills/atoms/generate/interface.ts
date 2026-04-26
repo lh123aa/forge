@@ -485,7 +485,8 @@ app.listen(PORT, () => {
 
     for (const [path, methods] of Object.entries(doc.paths)) {
       for (const [method, endpoint] of Object.entries(methods)) {
-        const handlerName = `${method}${path.replace(/\//g, '_').replace(/\{/g, '').replace(/}/g, '')}`;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const _handlerName = `${method}${path.replace(/\//g, '_').replace(/\{/g, '').replace(/}/g, '')}`;
         
         routes.push(`
 /**
@@ -569,7 +570,8 @@ export class ${controllerName} {
 ${Object.entries(doc.paths).map(([path, methods]) => {
   const operations = Object.entries(methods).map(([method, endpoint]) => {
     const nestMethod = method.toUpperCase();
-    const params = this.getNestParams(endpoint);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _params = this.getNestParams(endpoint);
     return `  @${nestMethod}('${path}')`;
   }).join('\n');
   return operations;

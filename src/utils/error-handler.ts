@@ -6,6 +6,7 @@ import {
   ErrorSeverity,
   ErrorRecoverable,
   type ErrorContext,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type RecoverySuggestion,
 } from '../types/errors.js';
 import { createLogger } from '../utils/logger.js';
@@ -51,7 +52,7 @@ export class ErrorHandler {
     this.config = {
       logStackTrace: config.logStackTrace ?? true,
       notifyOnError: config.notifyOnError ?? false,
-      onErrorNotify: config.onErrorNotify ?? (() => {}),
+      onErrorNotify: config.onErrorNotify ?? (() => { /* empty callback */ }),
       autoRecover: config.autoRecover ?? false,
       maxConsecutiveErrors: config.maxConsecutiveErrors ?? 10,
     };

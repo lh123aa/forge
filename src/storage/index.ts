@@ -3,7 +3,10 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { cwd } from 'process';
-import { SQLiteStorage, type SQLiteStorageConfig } from './sqlite-storage.js';
+import type { SQLiteStorageConfig } from './sqlite-storage.js';
+// SQLiteStorage is reserved for future use
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import _SQLiteStorage from './sqlite-storage.js';
 
 // 使用 process.cwd() 获取当前工作目录，避免 ESM/CommonJS 冲突
 const getBaseDir = (): string => {

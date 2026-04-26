@@ -76,8 +76,8 @@ export class ManualFixRequiredSkill extends BaseSkill {
    * 生成建议的人工操作
    */
   private generateSuggestedActions(
-    reason?: string, 
-    context?: Record<string, unknown>
+    reason?: string,
+    _context?: Record<string, unknown>
   ): string[] {
     const actions: string[] = [];
 

@@ -200,7 +200,7 @@ export class CodeFormatSkill extends BaseSkill {
     const lines = code.split('\n');
     let changed = false;
 
-    const normalizedLines = lines.map((line, index) => {
+    const normalizedLines = lines.map((line, _index) => {
       // 计算当前缩进级别
       const tabMatches = line.match(/^\t*/);
       const spaceMatches = line.match(/^ */);
@@ -339,7 +339,7 @@ export class CodeFormatSkill extends BaseSkill {
   /**
    * 添加尾随逗号
    */
-  private addTrailingComma(code: string, language: string): { code: string; changed: boolean } {
+  private addTrailingComma(code: string, _language: string): { code: string; changed: boolean } {
     let changed = false;
     let result = code;
 

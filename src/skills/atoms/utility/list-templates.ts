@@ -36,7 +36,7 @@ export class ListTemplatesSkill extends BaseSkill {
       if (params.search) {
         templates = this.templateManager.search(params.search);
       } else if (params.type) {
-        templates = this.templateManager.getByType(params.type as any);
+        templates = this.templateManager.getByType(params.type as 'page' | 'component' | 'api' | 'service' | 'model');
       } else if (params.framework) {
         templates = this.templateManager.getByFramework(params.framework);
       } else {

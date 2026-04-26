@@ -206,7 +206,7 @@ export class UnitTestSkill extends BaseSkill {
             let linesTotal = 0,
               linesCovered = 0;
 
-            for (const file of Object.values(coverageMap || {}) as any[]) {
+            for (const file of Object.values(coverageMap || {}) as Array<{ s?: { total?: number; covered?: number }; b?: { total?: number; covered?: number }; fn?: { total?: number; covered?: number }; lines?: { total?: number; covered?: number } }>) {
               stmtTotal += file.s?.total || 0;
               stmtCovered += file.s?.covered || 0;
               branchTotal += file.b?.total || 0;

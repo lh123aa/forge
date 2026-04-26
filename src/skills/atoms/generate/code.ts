@@ -56,8 +56,10 @@ export class GenerateCodeSkill extends BaseSkill {
       framework,
       template,
       analysis,
-      componentName,
-      apiName,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      componentName: _componentName,
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      apiName: _apiName,
     } = params;
 
     if (!demand && !analysis) {
@@ -123,7 +125,15 @@ export class GenerateCodeSkill extends BaseSkill {
    * 从模板生成代码
    */
   private async generateFromTemplate(params: CodeGenParams): Promise<SkillOutput> {
-    const { type, language, framework, demand, analysis, componentName, apiName } = params;
+    const { type, language, framework } = params;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _demand = params.demand;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _analysis = params.analysis;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _componentName = params.componentName;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _apiName = params.apiName;
 
     // 加载模板
     const templateName = this.getTemplateName(type || 'page', language || 'typescript', framework);
@@ -161,7 +171,11 @@ export class GenerateCodeSkill extends BaseSkill {
    * 注意：这里通过 LLMBridge 请求宿主 LLM 能力
    */
   private async generateFromLLM(params: CodeGenParams): Promise<SkillOutput> {
-    const { demand, type, language, framework, analysis } = params;
+    const { type, language, framework } = params;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _demand = params.demand;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _analysis = params.analysis;
 
     // 构建让宿主 LLM 生成代码的提示
     const prompt = this.llmBridge.buildCodeGenerationPrompt({
@@ -224,7 +238,7 @@ export class GenerateCodeSkill extends BaseSkill {
   /**
    * 获取模板名称
    */
-  private getTemplateName(type: string, language: string, framework?: string): string {
+  private getTemplateName(type: string, language: string, _framework?: string): string {
     if (type === 'page' && language === 'typescript') return 'page.tsx.hbs';
     if (type === 'component' && language === 'typescript') return 'component.tsx.hbs';
     if (type === 'api' && language === 'typescript') return 'api-express.ts.hbs';

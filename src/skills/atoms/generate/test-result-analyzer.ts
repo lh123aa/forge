@@ -173,8 +173,10 @@ export class TestResultAnalyzerSkill extends BaseSkill {
 
     if (framework === 'jest' || framework === 'vitest') {
       // 解析 Jest/Vitest 输出
-      const passMatch = output.match(/PASS\s+(.+)/);
-      const failMatch = output.match(/FAIL\s+(.+)/);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _passMatch = output.match(/PASS\s+(.+)/);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _failMatch = output.match(/FAIL\s+(.+)/);
       
       // 提取测试统计
       const statsMatch = output.match(/Tests:\s+(.+)/);
@@ -220,7 +222,7 @@ export class TestResultAnalyzerSkill extends BaseSkill {
   /**
    * 解析错误信息
    */
-  private parseError(error: string, framework: string): AnalyzedError {
+  private parseError(error: string, _framework: string): AnalyzedError {
     const errorLower = error.toLowerCase();
 
     // 语法错误

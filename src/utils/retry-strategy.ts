@@ -73,7 +73,7 @@ const defaultConfig: Required<RetryConfig> = {
     ErrorCode.NOT_FOUND,
     ErrorCode.ALREADY_EXISTS,
   ],
-  onRetry: () => {},
+  onRetry: () => { /* empty callback */ },
   timeout: 0,
 };
 
@@ -319,8 +319,9 @@ export function retrySync<T>(
   
   // 包装为异步操作
   const asyncOperation = async () => operation();
-  const result = strategy.execute(asyncOperation, context);
-  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _result = strategy.execute(asyncOperation, context);
+
   // 注意：这是简化的同步版本，实际应该用类似逻辑
   // 这里为保持接口简洁，返回同步调用结果（无重试）
   try {

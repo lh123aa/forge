@@ -64,9 +64,9 @@ export class CacheManager<T = unknown> {
       defaultTTL: options.defaultTTL ?? 5 * 60 * 1000, // 默认 5 分钟
       maxSize: options.maxSize ?? 1000,
       enableLRU: options.enableLRU ?? true,
-      onHit: options.onHit ?? (() => {}),
-      onMiss: options.onMiss ?? (() => {}),
-      onExpire: options.onExpire ?? (() => {}),
+      onHit: options.onHit ?? (() => { /* empty callback */ }),
+      onMiss: options.onMiss ?? (() => { /* empty callback */ }),
+      onExpire: options.onExpire ?? (() => { /* empty callback */ }),
     };
     
     this.stats = {

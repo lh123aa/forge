@@ -91,7 +91,7 @@ export class PrettierFormatSkill extends BaseSkill {
   /**
    * 模拟格式化
    */
-  private simulateFormat(files: string[], config: PrettierParams): FormatResult {
+  private simulateFormat(files: string[], _config: PrettierParams): FormatResult {
     const formattedFiles: string[] = [];
     const skippedFiles: string[] = [];
     const changes: FormatResult['changes'] = [];

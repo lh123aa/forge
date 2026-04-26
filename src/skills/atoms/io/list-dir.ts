@@ -40,7 +40,8 @@ export class ListDirSkill extends BaseSkill {
       const entries = await this.listDirectory(dirPath, recursive, includeHidden, filter);
 
       // 获取目录信息
-      const stats = await fs.stat(dirPath);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const _stats = await fs.stat(dirPath);
 
       return this.success({
         path: dirPath,

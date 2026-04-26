@@ -49,6 +49,7 @@ interface TestFixLoopParams {
 /**
  * 循环结果
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface LoopResult {
   success: boolean;
   roundsCompleted: number;
@@ -82,7 +83,8 @@ export class TestFixLoopSkill extends BaseSkill {
     } = params;
 
     // 从上下文获取测试结果和评分
-    const testResults = params.testResults || input.context.readOnly.testResults;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _testResults = params.testResults || input.context.readOnly.testResults;
     const qualityScore = (params.qualityScore || input.context.writable.qualityScore) as {
       overallScore: number;
       levelScores: Array<{
@@ -228,7 +230,7 @@ export class TestFixLoopSkill extends BaseSkill {
    * 尝试修复单个错误
    */
   private async attemptFix(
-    item: { level: TestLevel; error: { message: string; fixable: boolean } }
+    _item: { level: TestLevel; error: { message: string; fixable: boolean } }
   ): Promise<boolean> {
     // 模拟修复延迟
     await new Promise(resolve => setTimeout(resolve, 10));

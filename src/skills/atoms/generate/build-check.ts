@@ -149,7 +149,8 @@ export class BuildCheckSkill extends BaseSkill {
     const startTime = Date.now();
     
     // 确定构建命令
-    const command = buildCommand || this.detectBuildCommand(projectPath);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _command = buildCommand || this.detectBuildCommand(projectPath);
     
     // 模拟执行构建
     const errors = Math.floor(Math.random() * 3);
@@ -169,8 +170,8 @@ export class BuildCheckSkill extends BaseSkill {
    * 检查打包
    */
   private async checkBundle(
-    projectPath: string,
-    outputPath: string
+    _projectPath: string,
+    _outputPath: string
   ): Promise<BuildCheckResult['checks']['bundle']> {
     const startTime = Date.now();
     
@@ -213,8 +214,8 @@ export class BuildCheckSkill extends BaseSkill {
    * 检查资源文件
    */
   private async checkAssets(
-    projectPath: string,
-    outputPath: string
+    _projectPath: string,
+    _outputPath: string
   ): Promise<BuildCheckResult['checks']['assets']> {
     const startTime = Date.now();
     
@@ -233,7 +234,7 @@ export class BuildCheckSkill extends BaseSkill {
   /**
    * 检测构建命令
    */
-  private detectBuildCommand(projectPath: string): string {
+  private detectBuildCommand(_projectPath: string): string {
     // 检查 package.json 中的构建脚本
     // 这里简化处理，实际应读取 package.json
     return 'npm run build';
@@ -254,11 +255,12 @@ export class BuildCheckSkill extends BaseSkill {
   /**
    * 查找构建产出物
    */
-  private async findArtifacts(projectPath: string, outputPath: string): Promise<string[]> {
+  private async findArtifacts(_projectPath: string, outputPath: string): Promise<string[]> {
     const artifacts: string[] = [];
-    
+
     // 常见产出物模式
-    const patterns = [
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _patterns = [
       `${outputPath}/*.js`,
       `${outputPath}/*.css`,
       `${outputPath}/*.html`,

@@ -46,7 +46,7 @@ export class FormatCodeSkill extends BaseSkill {
   /**
    * 格式化代码（简化版）
    */
-  private formatCode(code: string, maxLineLength: number): string {
+  private formatCode(code: string, _maxLineLength: number): string {
     // 移除多余空白
     let formatted = code
       .split('\n')

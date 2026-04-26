@@ -61,7 +61,7 @@ export class SmartAnalysisSkill extends BaseSkill {
   /**
    * 搜索本地知识库
    */
-  private async searchLocalKnowledge(input: SkillInput, demand: string): Promise<Record<string, unknown> | null> {
+  private async searchLocalKnowledge(input: SkillInput, _demand: string): Promise<Record<string, unknown> | null> {
     // 从上下文获取知识库搜索结果
     const knowledgeResult = input.context.readOnly.knowledgeSearchResult;
     if (knowledgeResult) {
@@ -73,7 +73,7 @@ export class SmartAnalysisSkill extends BaseSkill {
   /**
    * 进行Web搜索
    */
-  private async searchWeb(input: SkillInput, demand: string): Promise<Record<string, unknown> | null> {
+  private async searchWeb(input: SkillInput, _demand: string): Promise<Record<string, unknown> | null> {
     // 从上下文获取Web搜索结果
     const webResult = input.context.readOnly.webSearchResult;
     if (webResult) {

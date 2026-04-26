@@ -42,7 +42,11 @@ export class FileIOSkill extends BaseSkill {
 
   protected async execute(input: SkillInput): Promise<SkillOutput> {
     const params = input.task.params as unknown as FileIOParams;
-    const { operation, filePath, createDir = true, overwrite = false } = params;
+    const { operation, filePath } = params;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _createDir = params.createDir ?? true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _overwrite = params.overwrite ?? false;
 
     if (!operation) {
       return this.fatalError('缺少操作类型 operation 参数');

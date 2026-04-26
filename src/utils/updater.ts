@@ -32,7 +32,8 @@ export function getCurrentVersion(): string {
 /**
  * 获取远程仓库信息
  */
-function getRemoteInfo(): { owner: string; repo: string } | null {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _getRemoteInfo(): { owner: string; repo: string } | null {
   try {
     const remoteUrl = execSync('git remote get-url origin', {
       cwd: ROOT_DIR,

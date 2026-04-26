@@ -3,7 +3,8 @@
 import { BaseSkill } from '../../../skills/base.skill.js';
 import { FileStorage } from '../../../storage/index.js';
 import { createLogger } from '../../../utils/logger.js';
-import path from 'path';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import _path from 'path';
 import type { SkillInput, SkillOutput } from '../../../types/index.js';
 
 const logger = createLogger('MockServerSkill');
@@ -283,7 +284,7 @@ module.exports = app;
    */
   private async generateMSWMock(
     config: MockConfig,
-    doc: Record<string, unknown>
+    _doc: Record<string, unknown>
   ): Promise<Record<string, string>> {
     const handlers = config.endpoints.map(endpoint => {
       const responseJson = JSON.stringify(endpoint.response, null, 2).replace(/\n/g, '\n  ');
@@ -334,7 +335,7 @@ ${handlers}
    */
   private async generateJSONServerMock(
     config: MockConfig,
-    doc: Record<string, unknown>
+    _doc: Record<string, unknown>
   ): Promise<Record<string, string>> {
     // 从接口定义生成 Mock 数据
     const mockData: Record<string, unknown[]> = {};

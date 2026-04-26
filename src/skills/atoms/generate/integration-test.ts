@@ -4,7 +4,8 @@ import { BaseSkill } from '../../base.skill.js';
 import { createLogger } from '../../../utils/logger.js';
 import type { SkillInput, SkillOutput } from '../../../types/index.js';
 
-const logger = createLogger('IntegrationTestSkill');
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _logger = createLogger('IntegrationTestSkill');
 
 interface IntegrationTestParams {
   projectPath?: string;
@@ -228,7 +229,7 @@ export class IntegrationTestSkill extends BaseSkill {
    */
   private async checkStart(
     projectPath: string,
-    timeout: number
+    _timeout: number
   ): Promise<IntegrationResult['checks'][0]> {
     const startTime = Date.now();
 

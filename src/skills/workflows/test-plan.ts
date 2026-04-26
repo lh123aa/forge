@@ -131,7 +131,8 @@ export class TestPlanSkill extends BaseSkill {
   protected async execute(input: SkillInput): Promise<SkillOutput> {
     const params = input.task.params as TestPlanParams;
     const {
-      projectPath = '.',
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      projectPath: _projectPath = '.',
       projectType = 'page',
       projectName,
       requirements = [],

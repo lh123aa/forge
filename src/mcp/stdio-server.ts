@@ -110,6 +110,7 @@ server.tool(
   },
   async (args) => {
     await agent.initialize();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const knowledgeBase = (agent as any).knowledgeBase;
     if (knowledgeBase) {
       await knowledgeBase.add({
@@ -134,6 +135,7 @@ server.tool(
   },
   async (args) => {
     await agent.initialize();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const knowledgeBase = (agent as any).knowledgeBase;
     if (knowledgeBase) {
       const result = await knowledgeBase.search(args.query);

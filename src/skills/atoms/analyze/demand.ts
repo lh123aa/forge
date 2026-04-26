@@ -228,7 +228,8 @@ ${demand}
    * 基础分析（降级方案）
    */
   private basicAnalysis(demand: string, projectType: string): AnalysisResult {
-    const keywords = this.extractKeywords(demand);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _keywords = this.extractKeywords(demand);
     const functions = this.extractFunctions(demand);
 
     return {

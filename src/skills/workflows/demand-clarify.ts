@@ -209,7 +209,8 @@ export class DemandClarifySkill extends BaseSkill {
     providedType?: string
   ): Promise<SkillOutput> {
     const projectType = providedType || this.detectProjectType(demand);
-    const typeRules = PROJECT_TYPE_ANALYSIS[projectType] || PROJECT_TYPE_ANALYSIS.page;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _typeRules = PROJECT_TYPE_ANALYSIS[projectType] || PROJECT_TYPE_ANALYSIS.page;
     
     // 根据已有答案，生成后续问题
     const followUpQuestions = this.generateFollowUpQuestions(demand, answers, projectType);
@@ -347,9 +348,9 @@ export class DemandClarifySkill extends BaseSkill {
    * 识别缺失信息
    */
   private identifyMissingInfo(
-    demand: string, 
-    projectType: string,
-    typeRules: typeof PROJECT_TYPE_ANALYSIS.page
+    demand: string,
+    _projectType: string,
+    _typeRules: typeof PROJECT_TYPE_ANALYSIS.page
   ): string[] {
     const missing: string[] = [];
     const lower = demand.toLowerCase();
@@ -364,7 +365,7 @@ export class DemandClarifySkill extends BaseSkill {
     }
     
     // 类型特定缺失
-    switch (projectType) {
+    switch (_projectType) {
       case 'page':
         if (!lower.includes('交互') && !lower.includes('操作')) {
           missing.push('主要交互方式');
@@ -546,7 +547,7 @@ export class DemandClarifySkill extends BaseSkill {
   /**
    * 生成特殊场景问题
    */
-  private generateSpecialQuestions(demand: string, projectType: string): ClarificationQuestion[] {
+  private generateSpecialQuestions(demand: string, _projectType: string): ClarificationQuestion[] {
     const questions: ClarificationQuestion[] = [];
     const lower = demand.toLowerCase();
 
@@ -593,13 +594,13 @@ export class DemandClarifySkill extends BaseSkill {
   private generateFollowUpQuestions(
     demand: string,
     answers: Record<string, unknown>,
-    projectType: string
+    _projectType: string
   ): ClarificationQuestion[] {
     const questions: ClarificationQuestion[] = [];
 
     // 根据答案生成深入问题
     // 例如：如果选择了"自由绘画"，追问绘画工具细节
-    for (const [questionId, answer] of Object.entries(answers)) {
+    for (const [_questionId, answer] of Object.entries(answers)) {
       const answerStr = String(answer).toLowerCase();
       
       if (answerStr.includes('绘画') || answerStr.includes('画笔')) {
