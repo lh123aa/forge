@@ -117,8 +117,8 @@ export class RetryStrategy {
     context: ErrorContext | undefined,
     state: RetryState
   ): Promise<RetryResult<T>> {
-    return new Promise((resolve) => {
-      const timeoutId = setTimeout(() => {
+    const timeoutPromise = new Promise<RetryResult<T>>((resolve) => {
+      setTimeout(() => {
         resolve({
           success: false,
           error: new SCAError('操作超时', {
@@ -129,21 +129,11 @@ export class RetryStrategy {
           state,
         });
       }, this.config.timeout);
-
-      this.executeWithoutTimeout(operation, context, state)
-        .then(result => {
-          clearTimeout(timeoutId);
-          resolve(result);
-        })
-        .catch(error => {
-          clearTimeout(timeoutId);
-          resolve({
-            success: false,
-            error: error instanceof SCAError ? error : new SCAError(String(error)),
-            state,
-          });
-        });
     });
+
+    const operationPromise = this.executeWithoutTimeout(operation, context, state);
+
+    return Promise.race([timeoutPromise, operationPromise]);
   }
 
   /**

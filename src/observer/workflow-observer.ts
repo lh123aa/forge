@@ -389,7 +389,8 @@ export class WorkflowObserver extends EventEmitter {
    */
   clear(): void {
     this.connections.clear();
-    logger.info('Cleared all connections');
+    this.removeAllListeners();
+    logger.info('Cleared all connections and listeners');
   }
 
   /**

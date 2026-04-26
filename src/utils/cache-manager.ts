@@ -49,6 +49,16 @@ export interface CacheStats {
  * 通用缓存管理器
  * 支持 TTL、LRU、统计等功能
  */
+// 时间常量（毫秒）
+const ONE_MINUTE = 60 * 1000;
+const FIVE_MINUTES = 5 * ONE_MINUTE;
+const TEN_MINUTES = 10 * ONE_MINUTE;
+const THIRTY_MINUTES = 30 * ONE_MINUTE;
+const ONE_HOUR = 60 * ONE_MINUTE;
+
+/**
+ * 缓存管理器
+ */
 export class CacheManager<T = unknown> {
   private cache: Map<string, CacheEntry<T>> = new Map();
   private options: Required<CacheOptions>;
@@ -58,17 +68,19 @@ export class CacheManager<T = unknown> {
     evictions: number;
     expirations: number;
   };
+  /** 定期清理定时器 */
+  private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(options: CacheOptions = {}) {
     this.options = {
-      defaultTTL: options.defaultTTL ?? 5 * 60 * 1000, // 默认 5 分钟
+      defaultTTL: options.defaultTTL ?? FIVE_MINUTES,
       maxSize: options.maxSize ?? 1000,
       enableLRU: options.enableLRU ?? true,
       onHit: options.onHit ?? (() => { /* empty callback */ }),
       onMiss: options.onMiss ?? (() => { /* empty callback */ }),
       onExpire: options.onExpire ?? (() => { /* empty callback */ }),
     };
-    
+
     this.stats = {
       hits: 0,
       misses: 0,
@@ -318,13 +330,24 @@ export class CacheManager<T = unknown> {
    * 启动定期清理定时器
    */
   private startCleanupTimer(): void {
-    // 每分钟清理一次过期缓存
-    setInterval(() => {
+    this.cleanupTimer = setInterval(() => {
       const cleaned = this.cleanup();
       if (cleaned > 0) {
         logger.debug('Periodic cache cleanup', { cleaned });
       }
-    }, 60 * 1000);
+    }, ONE_MINUTE);
+  }
+
+  /**
+   * 销毁缓存管理器（清理定时器）
+   */
+  destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+    this.cache.clear();
+    logger.debug('CacheManager destroyed');
   }
 }
 
@@ -342,7 +365,7 @@ export function createCache<T>(options?: CacheOptions): CacheManager<T> {
  */
 export function createResultCache(): CacheManager {
   return new CacheManager({
-    defaultTTL: 10 * 60 * 1000, // 10 分钟
+    defaultTTL: TEN_MINUTES,
     maxSize: 500,
     enableLRU: true,
   });
@@ -353,7 +376,7 @@ export function createResultCache(): CacheManager {
  */
 export function createSearchCache(): CacheManager {
   return new CacheManager({
-    defaultTTL: 30 * 60 * 1000, // 30 分钟
+    defaultTTL: THIRTY_MINUTES,
     maxSize: 200,
     enableLRU: true,
   });
@@ -364,7 +387,7 @@ export function createSearchCache(): CacheManager {
  */
 export function createTemplateCache(): CacheManager {
   return new CacheManager({
-    defaultTTL: 60 * 60 * 1000, // 1 小时
+    defaultTTL: ONE_HOUR,
     maxSize: 100,
     enableLRU: false, // 模板不需要 LRU
   });

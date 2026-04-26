@@ -6,6 +6,9 @@ import { ErrorCategory } from '../types/enhanced-errors.js';
 
 const logger = createLogger('CircuitBreaker');
 
+// 时间常量
+const ONE_MINUTE = 60 * 1000;
+
 /**
  * 熔断器状态
  */
@@ -46,7 +49,7 @@ export interface CircuitBreakerConfig {
 const defaultConfig: Required<CircuitBreakerConfig> = {
   name: 'default',
   failureThreshold: 5,
-  resetTimeout: 60000,
+  resetTimeout: ONE_MINUTE,
   halfOpenRequests: 3,
   successThreshold: 0.5,
   monitoredCategories: [
@@ -265,7 +268,11 @@ export class CircuitBreaker {
         clearTimeout(this.resetTimer);
       }
       this.resetTimer = setTimeout(() => {
-        this.checkStateTransition();
+        // 只有在 OPEN 状态时才转换到 HALF_OPEN
+        // 如果期间状态已改变（如 forceClose），则忽略
+        if (this.state === CircuitState.OPEN) {
+          this.checkStateTransition();
+        }
       }, this.config.resetTimeout);
 
       this.config.onCircuitOpen(
