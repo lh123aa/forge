@@ -1,6 +1,7 @@
 // Skill 注册器 - Skill 注册、发现、获取
 
 import { createLogger } from '../utils/logger.js';
+import { SkillDependencyResolver, skillDependencyResolver } from '../utils/skill-dependency-resolver.js';
 import type { Skill, SkillMeta, SkillCategory } from '../types/index.js';
 
 const logger = createLogger('SkillRegistry');
@@ -11,6 +12,8 @@ const logger = createLogger('SkillRegistry');
 export interface SkillRegistryOptions {
   /** 是否自动加载内置 Skill */
   autoLoadBuiltin?: boolean;
+  /** 是否启用依赖管理 */
+  enableDependencyResolution?: boolean;
 }
 
 /**
@@ -28,6 +31,7 @@ export class SkillRegistry {
   private skills: Map<string, SkillInstance> = new Map();
   private categories: Map<SkillCategory, Set<string>> = new Map();
   private options: SkillRegistryOptions;
+  private dependencyResolver: SkillDependencyResolver;
 
   // 单例实例
   private static _defaultInstance: SkillRegistry | null = null;
@@ -35,8 +39,10 @@ export class SkillRegistry {
   constructor(options?: SkillRegistryOptions) {
     this.options = {
       autoLoadBuiltin: true,
+      enableDependencyResolution: true,
       ...options,
     };
+    this.dependencyResolver = skillDependencyResolver;
   }
 
   /**
@@ -61,7 +67,7 @@ export class SkillRegistry {
    */
   register(skill: Skill): void {
     const { name, category } = skill.meta;
-    
+
     if (this.skills.has(name)) {
       logger.warn(`Skill "${name}" 已存在，将被覆盖`);
     }
@@ -76,6 +82,11 @@ export class SkillRegistry {
       this.categories.set(category, new Set());
     }
     this.categories.get(category)!.add(name);
+
+    // 注册依赖关系
+    if (this.options.enableDependencyResolution && skill.meta.dependencies) {
+      this.dependencyResolver.registerDependency(name, skill.meta.dependencies);
+    }
 
     logger.info(`Skill "${name}" 注册成功`, { category });
   }
@@ -130,11 +141,17 @@ export class SkillRegistry {
   /**
    * 移除 Skill
    */
-  unregister(name: string): boolean { const instance = this.skills.get(name);
+  unregister(name: string): boolean {
+    const instance = this.skills.get(name);
     if (!instance) return false;
 
     this.skills.delete(name);
     this.categories.get(instance.meta.category)?.delete(name);
+
+    // 移除依赖关系
+    if (this.options.enableDependencyResolution) {
+      this.dependencyResolver.unregisterDependency(name);
+    }
 
     logger.info(`Skill "${name}" 已移除`);
     return true;
@@ -165,7 +182,85 @@ export class SkillRegistry {
   clear(): void {
     this.skills.clear();
     this.categories.clear();
+    if (this.options.enableDependencyResolution) {
+      this.dependencyResolver.clear();
+    }
     logger.info('所有 Skill 已清空');
+  }
+
+  /**
+   * 解析 Skill 执行顺序（考虑依赖关系）
+   */
+  resolveExecutionOrder(skillNames: string[]): {
+    success: boolean;
+    executionOrder: string[];
+    error?: string;
+  } {
+    if (!this.options.enableDependencyResolution) {
+      return { success: true, executionOrder: skillNames };
+    }
+
+    const result = this.dependencyResolver.resolve(skillNames);
+    if (!result.success) {
+      logger.warn(`Dependency resolution failed: ${result.error}`);
+    }
+    return {
+      success: result.success,
+      executionOrder: result.executionOrder,
+      error: result.error,
+    };
+  }
+
+  /**
+   * 获取 Skill 的依赖链
+   */
+  getDependencyChain(skillName: string): string[] {
+    if (!this.options.enableDependencyResolution) {
+      return [];
+    }
+    return this.dependencyResolver.getAllDependencies(skillName);
+  }
+
+  /**
+   * 验证 Skill 的依赖是否都可用
+   */
+  validateDependencies(skillName: string): { valid: boolean; missingDeps: string[] } {
+    if (!this.options.enableDependencyResolution) {
+      return { valid: true, missingDeps: [] };
+    }
+
+    const availableSkills = new Set(this.skills.keys());
+    const result = this.dependencyResolver.validateDependencyChain(skillName, availableSkills);
+
+    if (!result.valid) {
+      logger.warn(`Dependency validation failed for ${skillName}: ${result.errors.join(', ')}`);
+    }
+
+    return {
+      valid: result.valid,
+      missingDeps: result.errors
+        .filter((e) => e.includes('not available'))
+        .map((e) => e.match(/"([^"]+)"/)?.[1] || ''),
+    };
+  }
+
+  /**
+   * 获取入口 Skills（无前置依赖的 Skills）
+   */
+  getEntrySkills(): string[] {
+    return this.getAll()
+      .filter((meta) => meta.isEntry || !meta.dependencies || meta.dependencies.length === 0)
+      .map((meta) => meta.name);
+  }
+
+  /**
+   * 获取依赖图
+   */
+  getDependencyGraph(): Record<string, { dependencies: string[]; dependents: string[] }> {
+    if (!this.options.enableDependencyResolution) {
+      return {};
+    }
+    return this.dependencyResolver.getDependencyGraph();
   }
 
   /**

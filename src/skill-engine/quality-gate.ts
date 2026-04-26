@@ -2,6 +2,7 @@
 // 定义质量检查规则，支持在关键节点自动触发质量验证
 
 import { createLogger } from '../utils/logger.js';
+import { securityAnalyzer, type SecurityScanResult } from '../utils/security-analyzer.js';
 import type { SkillInput, SkillOutput } from '../types/index.js';
 import { SkillRegistry } from './registry.js';
 import { SkillExecutor } from './executor.js';
@@ -558,71 +559,28 @@ export class QualityGate {
 
   /**
    * 运行 Security 门禁
-   * 检查代码中的安全漏洞模式
+   * 使用 Semgrep 或正则模式检测安全漏洞
    */
   private async runSecurityGate(gate: GateConfig, input: SkillInput, startTime: number): Promise<GateResult> {
-    const errors: string[] = [];
-    const warnings: string[] = [];
-
-    // 安全检查模式
-    const dangerousPatterns: Array<{ pattern: RegExp; severity: 'error' | 'warning'; message: string }> = [
-      // 代码注入风险
-      { pattern: /\beval\s*\(/, severity: 'error', message: '使用 eval() 可能导致代码注入攻击' },
-      { pattern: /\bnew\s+Function\s*\(/, severity: 'error', message: '使用 Function 构造函数可能导致代码注入' },
-      { pattern: /\bexec\s*\(/, severity: 'error', message: '使用 exec() 可能导致命令注入' },
-      { pattern: /\bexecSync\s*\(/, severity: 'error', message: '使用 execSync() 可能导致命令注入' },
-      { pattern: /\bsystem\s*\(/, severity: 'error', message: '使用 system() 可能导致命令注入' },
-      { pattern: /\bspawn\s*\(/, severity: 'warning', message: '使用 spawn() 请确保输入已验证' },
-      { pattern: /\bspawnSync\s*\(/, severity: 'warning', message: '使用 spawnSync() 请确保输入已验证' },
-
-      // 路径遍历
-      { pattern: /\.\.\/[^]*|\.\.\\[^]*/g, severity: 'warning', message: '检测到路径遍历模式，可能存在路径遍历漏洞' },
-      { pattern: /\bfs\.(readFile|writeFile|readFileSync|writeFileSync)\s*\([^)]*\+[^)]*\)/g, severity: 'warning', message: '文件操作中字符串拼接可能导致路径遍历' },
-
-      // 敏感信息暴露
-      { pattern: /password\s*=\s*['"][^'"]{1,}/gi, severity: 'error', message: '检测到硬编码密码' },
-      { pattern: /api[_-]?key\s*=\s*['"][^'"]{8,}/gi, severity: 'error', message: '检测到硬编码 API Key' },
-      { pattern: /secret\s*=\s*['"][^'"]{8,}/gi, severity: 'error', message: '检测到硬编码 Secret' },
-      { pattern: /token\s*=\s*['"][^'"]{10,}/gi, severity: 'warning', message: '检测到可能的硬编码 Token' },
-      { pattern: /-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----/g, severity: 'error', message: '检测到私钥硬编码' },
-
-      // SQL 注入风险（简单检测）
-      { pattern: /SELECT.*\+.*FROM|INSERT.*\+.*VALUES|UPDATE.*SET.*\+.*WHERE/gi, severity: 'warning', message: '检测到 SQL 语句字符串拼接，可能存在 SQL 注入风险' },
-
-      // XSS 风险（简单检测）
-      { pattern: /innerHTML\s*=|outerHTML\s*=/g, severity: 'warning', message: '直接设置 HTML 内容可能导致 XSS 攻击' },
-      { pattern: /document\.write\s*\(/g, severity: 'warning', message: '使用 document.write 可能导致 XSS 攻击' },
-
-      // 弱加密
-      { pattern: /md5\s*\(|MD5\s*\(/gi, severity: 'warning', message: 'MD5 是弱哈希算法，建议使用 SHA-256 或更强算法' },
-      { pattern: /sha1\s*\(|SHA1\s*\(/gi, severity: 'warning', message: 'SHA-1 是弱哈希算法，建议使用 SHA-256 或更强算法' },
-    ];
-
     // 从输入中提取代码内容进行检查
     const codeToCheck = this.extractCodeFromInput(input);
 
-    for (const { pattern, severity, message } of dangerousPatterns) {
-      if (pattern.test(codeToCheck)) {
-        if (severity === 'error') {
-          errors.push(message);
-        } else {
-          warnings.push(message);
-        }
-        // 重置正则状态
-        pattern.lastIndex = 0;
-      }
-    }
+    // 使用安全分析器扫描
+    const scanResult: SecurityScanResult = await securityAnalyzer.scan(codeToCheck, {
+      useSemgrep: gate.params?.useSemgrep !== false,
+      minSeverity: (gate.params?.minSeverity as 'error' | 'warning' | 'info') || 'info',
+    });
 
     // 检查阈值
     const thresholds = gate.thresholds || {};
     const maxErrors = thresholds.maxErrors ?? 0;
     const maxWarnings = thresholds.maxWarnings ?? 10;
 
-    const passed = errors.length <= maxErrors && warnings.length <= maxWarnings;
+    const passed = scanResult.errorCount <= maxErrors && scanResult.warningCount <= maxWarnings;
     const duration = Date.now() - startTime;
 
     if (!passed) {
-      logger.warn(`Security gate failed: ${errors.length} errors, ${warnings.length} warnings`);
+      logger.warn(`Security gate failed: ${scanResult.errorCount} errors, ${scanResult.warningCount} warnings`);
     }
 
     return {
@@ -630,12 +588,15 @@ export class QualityGate {
       type: 'security',
       passed,
       duration,
-      errors: errors.length,
-      warnings: warnings.length,
-      message: passed
-        ? `Security check passed: ${errors.length} errors, ${warnings.length} warnings`
-        : `Security check failed: ${errors.length} errors, ${warnings.length} warnings`,
-      details: { errors, warnings },
+      errors: scanResult.errorCount,
+      warnings: scanResult.warningCount,
+      message: scanResult.passed
+        ? `Security check passed (${scanResult.scanMethod}): ${scanResult.errorCount} errors, ${scanResult.warningCount} warnings`
+        : `Security check failed: ${scanResult.errorCount} errors, ${scanResult.warningCount} warnings`,
+      details: {
+        vulnerabilities: scanResult.vulnerabilities,
+        scanMethod: scanResult.scanMethod,
+      },
     };
   }
 

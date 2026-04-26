@@ -63,6 +63,18 @@ export interface SkillOutput {
 }
 
 /**
+ * Skill 依赖
+ */
+export interface SkillDependency {
+  /** 依赖的 Skill 名称 */
+  skill: string;
+  /** 最小版本约束（可选） */
+  version?: string;
+  /** 依赖说明 */
+  description?: string;
+}
+
+/**
  * Skill 元信息
  */
 export interface SkillMeta {
@@ -71,6 +83,10 @@ export interface SkillMeta {
   category: SkillCategory;
   version: string;
   tags?: string[];
+  /** 依赖的其他 Skills */
+  dependencies?: SkillDependency[];
+  /** 是否为入口 Skill（无前置依赖） */
+  isEntry?: boolean;
 }
 
 /**
