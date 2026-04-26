@@ -557,20 +557,130 @@ export class QualityGate {
   }
 
   /**
-   * 运行 Security 门禁（占位符）
+   * 运行 Security 门禁
+   * 检查代码中的安全漏洞模式
    */
   private async runSecurityGate(gate: GateConfig, input: SkillInput, startTime: number): Promise<GateResult> {
-    // TODO: 实现安全检查
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // 安全检查模式
+    const dangerousPatterns: Array<{ pattern: RegExp; severity: 'error' | 'warning'; message: string }> = [
+      // 代码注入风险
+      { pattern: /\beval\s*\(/, severity: 'error', message: '使用 eval() 可能导致代码注入攻击' },
+      { pattern: /\bnew\s+Function\s*\(/, severity: 'error', message: '使用 Function 构造函数可能导致代码注入' },
+      { pattern: /\bexec\s*\(/, severity: 'error', message: '使用 exec() 可能导致命令注入' },
+      { pattern: /\bexecSync\s*\(/, severity: 'error', message: '使用 execSync() 可能导致命令注入' },
+      { pattern: /\bsystem\s*\(/, severity: 'error', message: '使用 system() 可能导致命令注入' },
+      { pattern: /\bspawn\s*\(/, severity: 'warning', message: '使用 spawn() 请确保输入已验证' },
+      { pattern: /\bspawnSync\s*\(/, severity: 'warning', message: '使用 spawnSync() 请确保输入已验证' },
+
+      // 路径遍历
+      { pattern: /\.\.\/[^]*|\.\.\\[^]*/g, severity: 'warning', message: '检测到路径遍历模式，可能存在路径遍历漏洞' },
+      { pattern: /\bfs\.(readFile|writeFile|readFileSync|writeFileSync)\s*\([^)]*\+[^)]*\)/g, severity: 'warning', message: '文件操作中字符串拼接可能导致路径遍历' },
+
+      // 敏感信息暴露
+      { pattern: /password\s*=\s*['"][^'"]{1,}/gi, severity: 'error', message: '检测到硬编码密码' },
+      { pattern: /api[_-]?key\s*=\s*['"][^'"]{8,}/gi, severity: 'error', message: '检测到硬编码 API Key' },
+      { pattern: /secret\s*=\s*['"][^'"]{8,}/gi, severity: 'error', message: '检测到硬编码 Secret' },
+      { pattern: /token\s*=\s*['"][^'"]{10,}/gi, severity: 'warning', message: '检测到可能的硬编码 Token' },
+      { pattern: /-----BEGIN\s+(RSA\s+)?PRIVATE\s+KEY-----/g, severity: 'error', message: '检测到私钥硬编码' },
+
+      // SQL 注入风险（简单检测）
+      { pattern: /SELECT.*\+.*FROM|INSERT.*\+.*VALUES|UPDATE.*SET.*\+.*WHERE/gi, severity: 'warning', message: '检测到 SQL 语句字符串拼接，可能存在 SQL 注入风险' },
+
+      // XSS 风险（简单检测）
+      { pattern: /innerHTML\s*=|outerHTML\s*=/g, severity: 'warning', message: '直接设置 HTML 内容可能导致 XSS 攻击' },
+      { pattern: /document\.write\s*\(/g, severity: 'warning', message: '使用 document.write 可能导致 XSS 攻击' },
+
+      // 弱加密
+      { pattern: /md5\s*\(|MD5\s*\(/gi, severity: 'warning', message: 'MD5 是弱哈希算法，建议使用 SHA-256 或更强算法' },
+      { pattern: /sha1\s*\(|SHA1\s*\(/gi, severity: 'warning', message: 'SHA-1 是弱哈希算法，建议使用 SHA-256 或更强算法' },
+    ];
+
+    // 从输入中提取代码内容进行检查
+    const codeToCheck = this.extractCodeFromInput(input);
+
+    for (const { pattern, severity, message } of dangerousPatterns) {
+      if (pattern.test(codeToCheck)) {
+        if (severity === 'error') {
+          errors.push(message);
+        } else {
+          warnings.push(message);
+        }
+        // 重置正则状态
+        pattern.lastIndex = 0;
+      }
+    }
+
+    // 检查阈值
+    const thresholds = gate.thresholds || {};
+    const maxErrors = thresholds.maxErrors ?? 0;
+    const maxWarnings = thresholds.maxWarnings ?? 10;
+
+    const passed = errors.length <= maxErrors && warnings.length <= maxWarnings;
     const duration = Date.now() - startTime;
+
+    if (!passed) {
+      logger.warn(`Security gate failed: ${errors.length} errors, ${warnings.length} warnings`);
+    }
+
     return {
       gate: gate.name,
       type: 'security',
-      passed: true,
+      passed,
       duration,
-      errors: 0,
-      warnings: 0,
-      message: 'Security check skipped (not implemented)',
+      errors: errors.length,
+      warnings: warnings.length,
+      message: passed
+        ? `Security check passed: ${errors.length} errors, ${warnings.length} warnings`
+        : `Security check failed: ${errors.length} errors, ${warnings.length} warnings`,
+      details: { errors, warnings },
     };
+  }
+
+  /**
+   * 从输入中提取代码内容
+   */
+  private extractCodeFromInput(input: SkillInput): string {
+    const parts: string[] = [];
+
+    // 检查 task.target 字段（任务核心目标）
+    if (input.task?.target) {
+      parts.push(input.task.target);
+    }
+
+    // 检查 task.params 参数
+    if (input.task?.params) {
+      for (const value of Object.values(input.task.params)) {
+        if (typeof value === 'string') {
+          parts.push(value);
+        } else if (typeof value === 'object' && value !== null) {
+          try {
+            parts.push(JSON.stringify(value));
+          } catch {
+            // 忽略序列化失败
+          }
+        }
+      }
+    }
+
+    // 检查 config 中的额外字段
+    if (input.config) {
+      for (const value of Object.values(input.config)) {
+        if (typeof value === 'string') {
+          parts.push(value);
+        } else if (typeof value === 'object' && value !== null) {
+          try {
+            parts.push(JSON.stringify(value));
+          } catch {
+            // 忽略序列化失败
+          }
+        }
+      }
+    }
+
+    return parts.join('\n');
   }
 
   /**

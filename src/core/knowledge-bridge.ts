@@ -11,6 +11,15 @@ import type { KnowledgeSyncResult } from './types.js';
 const logger = createLogger('KnowledgeBridge');
 
 /**
+ * 外部知识条目
+ */
+interface ExternalKnowledgeEntry {
+  file: string;
+  preview: string;
+  matched: boolean;
+}
+
+/**
  * KnowledgeBridge 类
  * 负责知识在三系统之间的同步和共享
  */
@@ -152,8 +161,8 @@ export class KnowledgeBridge {
    * 统一查询接口
    * 先查 AIOS 知识库，再查 gstack/minimax
    */
-  async query(query: string): Promise<{ aios?: KnowledgeEntry; gstack?: any; minimax?: any }> {
-    const result: { aios?: KnowledgeEntry; gstack?: any; minimax?: any } = {};
+  async query(query: string): Promise<{ aios?: KnowledgeEntry; gstack?: ExternalKnowledgeEntry; minimax?: ExternalKnowledgeEntry }> {
+    const result: { aios?: KnowledgeEntry; gstack?: ExternalKnowledgeEntry; minimax?: ExternalKnowledgeEntry } = {};
 
     // 1. 先查 AIOS 知识库
     result.aios = await this.aiosKB.search(query) ?? undefined;
@@ -275,7 +284,6 @@ export class KnowledgeBridge {
       const fileName = path.basename(filePath, path.extname(filePath));
 
       // gstack learn 文件通常是 markdown 格式
-      const lines = content.split('\n');
       let topic = fileName;
       let keywords: string[] = [];
       let summary = '';
@@ -358,7 +366,7 @@ Exported: ${new Date().toISOString()}
   /**
    * 搜索 gstack learn
    */
-  private async searchGstackLearn(query: string): Promise<any | null> {
+  private async searchGstackLearn(query: string): Promise<ExternalKnowledgeEntry | null> {
     if (!this.gstackLearnPath) return null;
 
     const files = await this.findLearnFiles(this.gstackLearnPath);
@@ -381,7 +389,7 @@ Exported: ${new Date().toISOString()}
   /**
    * 搜索 minimax learn
    */
-  private async searchMinimaxLearn(query: string): Promise<any | null> {
+  private async searchMinimaxLearn(query: string): Promise<ExternalKnowledgeEntry | null> {
     if (!this.minimaxLearnPath) return null;
 
     const files = await this.findLearnFiles(this.minimaxLearnPath);

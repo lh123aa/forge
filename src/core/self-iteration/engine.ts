@@ -8,10 +8,9 @@ import type {
   GeneratedSkillMeta,
   ExecutionLogEntry,
   Pattern,
-  SkillSkeleton,
   EvolveResult,
 } from './types.js';
-import type { WorkflowPhase } from '../types.js';
+import type { Bottleneck } from './types.js';
 import { ExecutionLogger } from './execution-logger.js';
 import { MetricsAnalyzer } from './metrics-analyzer.js';
 import { OptimizationGenerator } from './optimization-generator.js';
@@ -102,7 +101,7 @@ export class SelfIterationEngine {
       // 2. 按 workflow 分组分析
       const workflowMap = this.groupByWorkflow(recentLogs);
 
-      for (const [workflowName, entries] of workflowMap) {
+      for (const [workflowName, _entries] of workflowMap) {
         try {
           // 3. 找出瓶颈
           const bottlenecks = await this.metricsAnalyzer.findBottlenecks(workflowName);
@@ -161,7 +160,7 @@ export class SelfIterationEngine {
 
     const suggestions = this.optimizationGenerator.generateSuggestions(
       metrics,
-      bottlenecks as any
+      bottlenecks as Bottleneck[]
     );
 
     return {
@@ -212,7 +211,7 @@ export class SelfIterationEngine {
    * 优化工作流
    */
   async evolveWorkflow(workflowName: string): Promise<EvolveResult | null> {
-    const metrics = await this.metricsAnalyzer.analyzeWorkflowPerformance(workflowName);
+    await this.metricsAnalyzer.analyzeWorkflowPerformance(workflowName);
     const bottlenecks = await this.metricsAnalyzer.findBottlenecks(workflowName);
 
     if (bottlenecks.length === 0) {
@@ -221,7 +220,7 @@ export class SelfIterationEngine {
     }
 
     // 简单的工作流进化逻辑
-    const modifications: any[] = [];
+    const modifications: Array<{ type: 'replace'; step: string; suggestion: string }> = [];
 
     for (const bottleneck of bottlenecks) {
       if (bottleneck.severity === 'high') {

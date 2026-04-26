@@ -36,7 +36,6 @@ import buildCheckSkill from './skills/atoms/generate/build-check.js';
 import formatCodeSkill from './skills/atoms/format/code.js';
 import codeFormatSkill from './skills/atoms/format/code-standardize.js';
 import prettierFormatSkill from './skills/atoms/format/prettier-format.js';
-import fileIOSkill from './skills/atoms/io/file-io.js';
 import observeRecordSkill from './skills/atoms/observe/record.js';
 import observeReportSkill from './skills/atoms/observe/report.js';
 import waitSkill from './skills/atoms/utility/wait.js';
@@ -549,6 +548,7 @@ export class SmartCodeAgent {
    * 注册 Skill
    */
   registerSkill(skill: unknown): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.skillRegistry.register(skill as any);
   }
 
@@ -556,6 +556,7 @@ export class SmartCodeAgent {
    * 设置 MCP 客户端
    */
   setMCPClient(client: unknown): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.llmBridge.setMCPClient(client as any);
     logger.info('MCP client configured');
   }

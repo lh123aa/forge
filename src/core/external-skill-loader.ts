@@ -8,12 +8,6 @@ import { createLogger } from '../utils/logger.js';
 
 const logger = createLogger('ExternalSkillLoader');
 
-// 技能目录映射
-interface SkillDirectory {
-  basePath: string;
-  source: SkillSource;
-}
-
 /**
  * ExternalSkillLoader 类
  * 负责从外部系统加载技能

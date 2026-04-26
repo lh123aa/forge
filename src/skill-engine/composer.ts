@@ -103,7 +103,7 @@ export class SkillComposer {
     input: SkillInput,
     config?: ComposeConfig
   ): Promise<SkillOutput[]> {
-    const cfg = { ...defaultConfig, ...config };
+    const _cfg = { ...defaultConfig, ...config };
     const promises = skills.map(async (skill) => {
       try {
         logger.debug(`Executing skill in parallel: ${skill.meta.name}`);

@@ -1,7 +1,7 @@
 // 路由规则配置
 // 定义所有路由规则，按优先级排序
 
-import { SkillSource, type RoutingContext, type RoutingRule, type RoutingResult } from './types.js';
+import { SkillSource, type RoutingContext, type RoutingRule } from './types.js';
 
 /**
  * 默认路由上下文

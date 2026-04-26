@@ -1,11 +1,12 @@
 // 工作流执行器 - 按步骤执行工作流，支持进度回调
 
 import { createLogger } from '../utils/logger.js';
-import type { SkillInput, SkillOutput, Workflow, WorkflowExecution, WorkflowStep } from '../types/index.js';
+import type { SkillInput, SkillOutput, Workflow, WorkflowExecution } from '../types/index.js';
 import { SkillRegistry } from './registry.js';
 import { SkillExecutor } from './executor.js';
 import { WorkflowParser } from './parser.js';
 import { WorkflowStateManager } from './state.js';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { QualityGate, type GateCheckpoint, type GateSummary } from './quality-gate.js';
 
 const logger = createLogger('WorkflowExecutor');

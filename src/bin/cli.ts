@@ -18,7 +18,7 @@ program
   .command('init')
   .description('初始化 Smart Code Agent')
   .option('-p, --path <path>', '项目路径', '.')
-  .action(async (options) => {
+  .action(async (_options) => {
     logger.info('Initializing Smart Code Agent...');
     const agent = new SmartCodeAgent();
     await agent.initialize();
@@ -49,11 +49,12 @@ program
     const agent = new SmartCodeAgent();
     await agent.initialize();
     // 通过 skill registry 获取 skills
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const registry = (agent as any).skillRegistry;
     const skills = registry ? registry.getAll() : [];
     console.log('\nAvailable Skills:');
     if (Array.isArray(skills)) {
-      skills.forEach((skill: any) => {
+      skills.forEach((skill: { name?: string; description?: string }) => {
         console.log(`  - ${skill.name || 'unknown'}: ${skill.description || 'No description'}`);
       });
     } else {

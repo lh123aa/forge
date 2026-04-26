@@ -4,7 +4,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { ExecutionLogEntry, PerformanceMetrics } from './types.js';
-import type { SkillSource } from '../types.js';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('ExecutionLogger');

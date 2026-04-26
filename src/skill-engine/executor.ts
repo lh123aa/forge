@@ -1,6 +1,7 @@
 // Skill 执行器 - Skill 统一执行入口、异常捕获
 
 import { createLogger } from '../utils/logger.js';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { Skill, SkillInput, SkillOutput, SkillStatusCode } from '../types/index.js';
 import { SkillRegistry } from './registry.js';
 import { SkillValidator } from './validator.js';

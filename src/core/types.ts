@@ -1,7 +1,7 @@
 // Forge 核心类型定义
 // 扩展现有 AIOS 类型系统，添加三系统整合相关类型
 
-import type { Workflow, SkillInput, SkillOutput, KnowledgeEntry } from '../types/index.js';
+import type { Workflow, SkillOutput } from '../types/index.js';
 
 // ==================== 技能来源枚举 ====================
 

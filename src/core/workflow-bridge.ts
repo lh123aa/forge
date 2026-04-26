@@ -2,6 +2,7 @@
 // 连接 AIOS 工作流系统和外部技能
 
 import { SkillSource, type ForgeWorkflow, type RoutingResult } from './types.js';
+import type { RoutingContext, TechDomain, ComplexityLevel } from './types.js';
 import type { SkillInput, SkillOutput } from '../types/index.js';
 import { SkillRouter } from './skill-router.js';
 import { ExternalSkillLoader } from './external-skill-loader.js';
@@ -61,7 +62,7 @@ export class WorkflowBridge {
   /**
    * 路由到技能
    */
-  async routeToSkill(routingResult: RoutingResult, input: SkillInput): Promise<SkillOutput> {
+  async routeToSkill(routingResult: RoutingResult, _input: SkillInput): Promise<SkillOutput> {
     const { source, skill, invokeType } = routingResult;
 
     if (invokeType === 'direct') {
@@ -151,11 +152,11 @@ export class WorkflowBridge {
     hasBrowser?: boolean;
   }) {
     return this.skillRouter.route({
-      phase: params.phase as any,
+      phase: params.phase as RoutingContext['phase'],
       originalInput: params.originalInput,
       techStack: params.techStack,
-      domain: params.domain as any,
-      complexity: params.complexity as any,
+      domain: params.domain as TechDomain,
+      complexity: params.complexity as ComplexityLevel,
       hasBrowser: params.hasBrowser,
     });
   }

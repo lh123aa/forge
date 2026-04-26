@@ -1,9 +1,8 @@
 // MetricsAnalyzer - 性能指标分析器
 // 分析执行日志，识别瓶颈，生成优化建议
 
-import type { ExecutionLogEntry, PerformanceMetrics, Bottleneck, OptimizationSuggestion } from './types.js';
+import type { ExecutionLogEntry, PerformanceMetrics, Bottleneck } from './types.js';
 import { ExecutionLogger } from './execution-logger.js';
-import { v4 as uuidv4 } from 'uuid';
 import { createLogger } from '../../utils/logger.js';
 
 const logger = createLogger('MetricsAnalyzer');
@@ -199,15 +198,12 @@ export class MetricsAnalyzer {
   /**
    * 生成趋势报告
    */
-  async generateTrendReport(target: string, type: 'skill' | 'workflow', days: number = 7): Promise<{
+  async generateTrendReport(target: string, type: 'skill' | 'workflow', _days: number = 7): Promise<{
     trend: 'up' | 'down' | 'stable';
     changePercent: number;
     currentMetrics: PerformanceMetrics;
     previousMetrics: PerformanceMetrics;
   }> {
-    const now = Date.now();
-    const weekAgo = now - days * 24 * 60 * 60 * 1000;
-
     // 获取历史数据（简化处理，实际应该按时间范围过滤）
     const currentMetrics = await this.logger.getMetrics(target, type);
 

@@ -175,8 +175,11 @@ server.tool(
 // ==================== Forge 工具 ====================
 
 // 延迟加载 Forge 模块（避免循环依赖）
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let forgeRouter: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let forgeLoader: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let forgeBridge: any = null;
 
 async function getForgeModules() {
@@ -226,7 +229,15 @@ server.tool(
     const { loader } = await getForgeModules();
     const allSkills = await loader.listAvailableSkills();
 
-    let result: any;
+    interface SkillListResult {
+      aios?: string[];
+      gstack?: string[];
+      minimax?: string[];
+      source?: string;
+      skills?: string[];
+    }
+
+    let result: SkillListResult;
     if (args.source === 'all' || !args.source) {
       result = {
         aios: ['demand-collect', 'demand-analysis', 'demand-confirm', 'task-decompose', 'task-plan', 'generate-code', 'code-review', 'test-orchestrator'],
@@ -240,7 +251,7 @@ server.tool(
       };
     } else if (args.source === 'gstack') {
       result = { source: 'gstack', skills: allSkills.gstack };
-    } else if (args.source === 'minimax') {
+    } else {
       result = { source: 'minimax', skills: allSkills.minimax };
     }
 
@@ -260,12 +271,14 @@ server.tool(
   },
   async (args) => {
     const { loader } = await getForgeModules();
-    const { SkillSource } = await import('../core/types.js');
+    const { SkillSource: EnumSkillSource } = await import('../core/types.js');
 
-    const sourceMap: Record<string, any> = {
-      aios: SkillSource.AIOS,
-      gstack: SkillSource.GSTACK,
-      minimax: SkillSource.MINIMAX,
+    type SkillSourceType = typeof EnumSkillSource[keyof typeof EnumSkillSource];
+
+    const sourceMap: Record<string, SkillSourceType> = {
+      aios: EnumSkillSource.AIOS,
+      gstack: EnumSkillSource.GSTACK,
+      minimax: EnumSkillSource.MINIMAX,
     };
 
     const source = sourceMap[args.source];
@@ -290,8 +303,15 @@ server.tool(
     const { bridge } = await getForgeModules();
     let workflows = bridge.listWorkflows();
 
+    interface WorkflowInfo {
+      name: string;
+      description: string;
+      type: string;
+      skills: string[];
+    }
+
     if (args.phase) {
-      workflows = workflows.filter((w: any) => w.type === args.phase);
+      workflows = workflows.filter((w: { type: string }) => w.type === args.phase);
     }
 
     return {
@@ -299,11 +319,11 @@ server.tool(
         {
           type: 'text',
           text: JSON.stringify(
-            workflows.map((w: any) => ({
+            workflows.map((w: { name: string; description: string; type: string; skills: Array<{ source: string; name: string }> }): WorkflowInfo => ({
               name: w.name,
               description: w.description,
               type: w.type,
-              skills: w.skills.map((s: any) => `${s.source}:${s.name}`),
+              skills: w.skills.map((s) => `${s.source}:${s.name}`),
             })),
             null,
             2

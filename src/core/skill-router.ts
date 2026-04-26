@@ -181,7 +181,7 @@ export class SkillRouter {
   /**
    * 构建原因描述
    */
-  private buildReason(ctx: RoutingContext, rule: RoutingRule): string {
+  private buildReason(ctx: RoutingContext, _rule: RoutingRule): string {
     const reasons: string[] = [];
 
     if (ctx.phase) {
@@ -206,7 +206,7 @@ export class SkillRouter {
   /**
    * 获取默认结果
    */
-  private getDefaultResult(ctx: RoutingContext): RoutingResult {
+  private getDefaultResult(_ctx: RoutingContext): RoutingResult {
     return {
       source: SkillSource.AIOS,
       skill: 'generate-code',

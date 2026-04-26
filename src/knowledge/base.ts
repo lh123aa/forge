@@ -1,7 +1,7 @@
 // 知识库基础实现
 
 import { v4 as uuidv4 } from 'uuid';
-import { FileStorage, type StorageConfig } from '../storage/index.js';
+import { FileStorage } from '../storage/index.js';
 import { createLogger } from '../utils/logger.js';
 import type { KnowledgeEntry } from '../types/index.js';
 

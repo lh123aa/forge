@@ -2,7 +2,7 @@
 // 实现 MCP 协议接口
 
 import { SmartCodeAgent } from '../plugin.js';
-import { getAllTools, getToolByName } from './tools.js';
+import { getAllTools } from './tools.js';
 import { getAllResources, getResourceByURI } from './resources.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -130,6 +130,7 @@ export class MCPServer {
 
         case 'sca-add-knowledge': {
           // 添加知识库条目
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const knowledgeBase = (this.agent as any).knowledgeBase;
           if (knowledgeBase) {
             await knowledgeBase.add({
@@ -151,6 +152,7 @@ export class MCPServer {
         }
 
         case 'sca-search-knowledge': {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const knowledgeBase = (this.agent as any).knowledgeBase;
           if (knowledgeBase) {
             const result = await knowledgeBase.search(args.query as string);
@@ -285,6 +287,7 @@ export class MCPServer {
 
       case 'sca://statistics': {
         // 获取统计数据
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const reporter = (this.agent as any).observerReporter;
         if (reporter && typeof reporter.getStatistics === 'function') {
           const stats = await reporter.getStatistics();

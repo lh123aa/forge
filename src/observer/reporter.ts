@@ -119,7 +119,6 @@ export class ObserverReporter {
    * 生成 HTML 报告
    */
   private buildHTMLReport(summary: RunSummary): string {
-    const statusColor = this.getStatusColor(summary.overallStatus);
     const stageRows = summary.stages.map(stage => `
       <tr>
         <td>${stage.stage}</td>
