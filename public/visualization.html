@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forge 工作流可视化</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f23;
+      color: #fff;
+      min-height: 100vh;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    
+    header {
+      background: #1a1a2e;
+      padding: 16px 24px;
+      border-bottom: 1px solid #2d2d44;
+    }
+    
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .status-bar {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: #888;
+    }
+    
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #444;
+    }
+    
+    .status-dot.connected {
+      background: #00ff88;
+    }
+    
+    .status-dot.disconnected {
+      background: #ff4444;
+    }
+    
+    .main-content {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    .dag-container {
+      flex: 1;
+      padding: 24px;
+      overflow: auto;
+      position: relative;
+    }
+    
+    #dag-canvas {
+      min-width: 100%;
+      min-height: 100%;
+    }
+    
+    .sidebar {
+      width: 320px;
+      background: #1a1a2e;
+      border-left: 1px solid #2d2d44;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #2d2d44;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    
+    .node-detail {
+      display: none;
+    }
+    
+    .node-detail.active {
+      display: block;
+    }
+    
+    .detail-section {
+      margin-bottom: 20px;
+    }
+    
+    .detail-section h3 {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    
+    .detail-value {
+      font-size: 14px;
+      word-break: break-all;
+    }
+    
+    .detail-json {
+      background: #0f0f23;
+      padding: 12px;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .step-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: #0f0f23;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    
+    .step-item:hover {
+      background: #252540;
+    }
+    
+    .step-item.active {
+      background: #252540;
+      border: 1px solid #4a4a6a;
+    }
+    
+    .step-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+    
+    .step-icon.pending {
+      background: #2d2d44;
+      color: #666;
+    }
+    
+    .step-icon.running {
+      background: #0066ff;
+      color: #fff;
+      animation: pulse 1s infinite;
+    }
+    
+    .step-icon.success {
+      background: #00cc66;
+      color: #fff;
+    }
+    
+    .step-icon.failed {
+      background: #ff4444;
+      color: #fff;
+    }
+    
+    .step-icon.skipped {
+      background: #666;
+      color: #fff;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .step-info {
+      flex: 1;
+    }
+    
+    .step-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    
+    .step-duration {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+    
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    /* DAG specific styles */
+    .dag-node {
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    
+    .dag-node:hover {
+      transform: scale(1.05);
+    }
+    
+    .dag-node rect {
+      rx: 8;
+      ry: 8;
+      stroke-width: 2;
+    }
+    
+    .dag-node.pending rect {
+      fill: #2d2d44;
+      stroke: #4a4a6a;
+    }
+    
+    .dag-node.running rect {
+      fill: #003380;
+      stroke: #0066ff;
+    }
+    
+    .dag-node.success rect {
+      fill: #004d26;
+      stroke: #00cc66;
+    }
+    
+    .dag-node.failed rect {
+      fill: #4d0000;
+      stroke: #ff4444;
+    }
+    
+    .dag-node.skipped rect {
+      fill: #333;
+      stroke: #666;
+    }
+    
+    .dag-node text {
+      fill: #fff;
+      font-size: 12px;
+      text-anchor: middle;
+      pointer-events: none;
+    }
+    
+    .dag-edge {
+      stroke: #4a4a6a;
+      stroke-width: 2;
+      fill: none;
+    }
+    
+    .dag-edge.active {
+      stroke: #0066ff;
+      stroke-width: 3;
+    }
+    
+    .dag-edge.completed {
+      stroke: #00cc66;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Forge 工作流可视化</h1>
+      <div class="status-bar">
+        <div class="status-item">
+          <span class="status-dot" id="connection-status"></span>
+          <span id="connection-text">未连接</span>
+        </div>
+        <div class="status-item">
+          <span>工作流:</span>
+          <span id="workflow-name">-</span>
+        </div>
+        <div class="status-item">
+          <span>步骤:</span>
+          <span id="step-count">0/0</span>
+        </div>
+        <div class="status-item">
+          <span>耗时:</span>
+          <span id="duration">-</span>
+        </div>
+      </div>
+    </header>
+    
+    <div class="main-content">
+      <div class="dag-container">
+        <svg id="dag-canvas"></svg>
+      </div>
+      
+      <div class="sidebar">
+        <div class="sidebar-header">步骤列表</div>
+        <div class="sidebar-content">
+          <div id="step-list" class="step-list">
+            <div class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              <p>等待工作流开始...</p>
+            </div>
+          </div>
+          
+          <div id="node-detail" class="node-detail">
+            <div class="detail-section">
+              <h3>节点名称</h3>
+              <div class="detail-value" id="detail-name">-</div>
+            </div>
+            <div class="detail-section">
+              <h3>状态</h3>
+              <div class="detail-value" id="detail-status">-</div>
+            </div>
+            <div class="detail-section">
+              <h3>耗时</h3>
+              <div class="detail-value" id="detail-duration">-</div>
+            </div>
+            <div class="detail-section">
+              <h3>输入</h3>
+              <div class="detail-json" id="detail-input">-</div>
+            </div>
+            <div class="detail-section">
+              <h3>输出</h3>
+              <div class="detail-json" id="detail-output">-</div>
+            </div>
+            <div class="detail-section" id="error-section" style="display:none">
+              <h3>错误</h3>
+              <div class="detail-value" id="detail-error" style="color:#ff4444">-</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // WebSocket 连接管理
+    class VisualizationClient {
+      constructor() {
+        this.ws = null;
+        this.clientId = null;
+        this.currentWorkflow = null;
+        this.nodes = new Map();
+        this.edges = new Map();
+        this.selectedNodeId = null;
+        
+        this.init();
+      }
+      
+      init() {
+        this.connect();
+      }
+      
+      connect() {
+        const wsUrl = `ws://${window.location.hostname || 'localhost'}:3456`;
+        
+        try {
+          this.ws = new WebSocket(wsUrl);
+          
+          this.ws.onopen = () => {
+            this.updateConnectionStatus(true);
+            console.log('Connected to visualization server');
+          };
+          
+          this.ws.onclose = () => {
+            this.updateConnectionStatus(false);
+            console.log('Disconnected from visualization server');
+            // 尝试重新连接
+            setTimeout(() => this.connect(), 3000);
+          };
+          
+          this.ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+          };
+          
+          this.ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            this.handleMessage(message);
+          };
+        } catch (error) {
+          console.error('Failed to connect:', error);
+          setTimeout(() => this.connect(), 3000);
+        }
+      }
+      
+      updateConnectionStatus(connected) {
+        const dot = document.getElementById('connection-status');
+        const text = document.getElementById('connection-text');
+        
+        if (connected) {
+          dot.classList.add('connected');
+          dot.classList.remove('disconnected');
+          text.textContent = '已连接';
+        } else {
+          dot.classList.remove('connected');
+          dot.classList.add('disconnected');
+          text.textContent = '未连接';
+        }
+      }
+      
+      handleMessage(message) {
+        switch (message.type) {
+          case 'connected':
+            this.clientId = message.payload.clientId;
+            console.log('Registered as:', this.clientId);
+            break;
+            
+          case 'started':
+            this.handleWorkflowStarted(message.payload);
+            break;
+            
+          case 'step-started':
+            this.handleStepStarted(message.payload);
+            break;
+            
+          case 'step-completed':
+            this.handleStepCompleted(message.payload);
+            break;
+            
+          case 'step-failed':
+            this.handleStepFailed(message.payload);
+            break;
+            
+          case 'step-skipped':
+            this.handleStepSkipped(message.payload);
+            break;
+            
+          case 'completed':
+            this.handleWorkflowCompleted(message.payload);
+            break;
+            
+          case 'snapshot':
+            this.handleSnapshot(message.payload);
+            break;
+            
+          case 'node-updated':
+            this.handleNodeUpdated(message.payload);
+            break;
+        }
+      }
+      
+      handleWorkflowStarted(payload) {
+        this.currentWorkflow = {
+          name: payload.workflowName,
+          traceId: payload.traceId,
+          totalSteps: payload.totalSteps
+        };
+        
+        document.getElementById('workflow-name').textContent = payload.workflowName;
+        document.getElementById('step-count').textContent = `0/${payload.totalSteps}`;
+        
+        // 请求初始快照
+        this.send({ type: 'get-snapshot', traceId: payload.traceId });
+      }
+      
+      handleStepStarted(payload) {
+        const { stepName, stepIndex, nodeId } = payload;
+        
+        // 更新节点状态
+        const node = this.nodes.get(nodeId);
+        if (node) {
+          node.status = 'running';
+          node.startTime = Date.now();
+        }
+        
+        // 更新UI
+        document.getElementById('step-count').textContent = 
+          `${stepIndex + 1}/${this.currentWorkflow?.totalSteps || 0}`;
+        
+        this.updateDAG();
+        this.updateStepList();
+      }
+      
+      handleStepCompleted(payload) {
+        const { stepIndex, nodeId, output } = payload;
+        
+        // 更新节点状态
+        const node = this.nodes.get(nodeId);
+        if (node) {
+          node.status = 'success';
+          node.endTime = Date.now();
+          node.duration = node.endTime - (node.startTime || 0);
+          node.output = output;
+        }
+        
+        this.updateDAG();
+        this.updateStepList();
+      }
+      
+      handleStepFailed(payload) {
+        const { stepIndex, nodeId, error } = payload;
+        
+        // 更新节点状态
+        const node = this.nodes.get(nodeId);
+        if (node) {
+          node.status = 'failed';
+          node.endTime = Date.now();
+          node.duration = node.endTime - (node.startTime || 0);
+          node.error = error;
+        }
+        
+        this.updateDAG();
+        this.updateStepList();
+      }
+      
+      handleStepSkipped(payload) {
+        const { stepIndex, nodeId } = payload;
+        
+        // 更新节点状态
+        const node = this.nodes.get(nodeId);
+        if (node) {
+          node.status = 'skipped';
+        }
+        
+        this.updateDAG();
+        this.updateStepList();
+      }
+      
+      handleWorkflowCompleted(payload) {
+        const { success, totalDuration } = payload;
+        
+        document.getElementById('duration').textContent = this.formatDuration(totalDuration);
+        
+        this.updateDAG();
+        this.updateStepList();
+      }
+      
+      handleSnapshot(payload) {
+        this.nodes.clear();
+        this.edges.clear();
+        
+        for (const node of payload.nodes) {
+          this.nodes.set(node.id, node);
+        }
+        
+        for (const edge of payload.edges) {
+          this.edges.set(edge.id, edge);
+        }
+        
+        this.updateDAG();
+        this.updateStepList();
+      }
+      
+      handleNodeUpdated(payload) {
+        const node = this.nodes.get(payload.id);
+        if (node) {
+          Object.assign(node, payload);
+        }
+        
+        this.updateDAG();
+        this.updateStepList();
+      }
+      
+      send(message) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify(message));
+        }
+      }
+      
+      formatDuration(ms) {
+        if (!ms) return '-';
+        if (ms < 1000) return `${ms}ms`;
+        if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+        return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
+      }
+      
+      // 更新 DAG 可视化
+      updateDAG() {
+        const svg = document.getElementById('dag-canvas');
+        const nodeSpacing = 150;
+        const levelSpacing = 80;
+        
+        // 清除现有内容
+        svg.innerHTML = '';
+        
+        // 计算布局
+        let maxX = 0;
+        let maxY = 0;
+        
+        const positionedNodes = [];
+        for (const [id, node] of this.nodes) {
+          if (node.type === 'skill') {
+            const index = Array.from(this.nodes.keys()).indexOf(id) - 1; // 减去 start 节点
+            const x = 100 + (index % 6) * nodeSpacing;
+            const y = 100 + Math.floor(index / 6) * levelSpacing;
+            
+            positionedNodes.push({ ...node, x, y });
+            maxX = Math.max(maxX, x + 100);
+            maxY = Math.max(maxY, y + 50);
+          }
+        }
+        
+        // 绘制边
+        const edges = Array.from(this.edges.values());
+        for (const edge of edges) {
+          const sourceNode = positionedNodes.find(n => n.id === edge.source);
+          const targetNode = positionedNodes.find(n => n.id === edge.target);
+          
+          if (sourceNode && targetNode) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            
+            const sourceX = sourceNode.x + 70;
+            const sourceY = sourceNode.y + 25;
+            const targetX = targetNode.x - 10;
+            const targetY = targetNode.y + 25;
+            
+            // 使用曲线连接
+            const midX = (sourceX + targetX) / 2;
+            path.setAttribute('d', `M ${sourceX} ${sourceY} C ${midX} ${sourceY}, ${midX} ${targetY}, ${targetX} ${targetY}`);
+            path.setAttribute('class', `dag-edge ${edge.active ? 'active' : ''} ${edge.completed ? 'completed' : ''}`);
+            
+            // 箭头
+            svg.appendChild(path);
+          }
+        }
+        
+        // 绘制节点
+        for (const node of positionedNodes) {
+          const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          g.setAttribute('class', `dag-node ${node.status}`);
+          g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+          g.onclick = () => this.selectNode(node.id);
+          
+          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          rect.setAttribute('width', '80');
+          rect.setAttribute('height', '50');
+          
+          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          text.setAttribute('y', '30');
+          text.textContent = node.name.length > 10 ? node.name.substring(0, 10) + '...' : node.name;
+          
+          // 状态图标
+          if (node.status === 'running') {
+            const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            icon.setAttribute('x', '70');
+            icon.setAttribute('y', '15');
+            icon.setAttribute('font-size', '16');
+            icon.textContent = '⏳';
+            g.appendChild(icon);
+          } else if (node.status === 'success') {
+            const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            icon.setAttribute('x', '70');
+            icon.setAttribute('y', '15');
+            icon.setAttribute('font-size', '16');
+            icon.textContent = '✓';
+            g.appendChild(icon);
+          } else if (node.status === 'failed') {
+            const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            icon.setAttribute('x', '70');
+            icon.setAttribute('y', '15');
+            icon.setAttribute('font-size', '16');
+            icon.textContent = '✗';
+            g.appendChild(icon);
+          }
+          
+          g.appendChild(rect);
+          g.appendChild(text);
+          svg.appendChild(g);
+        }
+        
+        // 设置 SVG 尺寸
+        svg.setAttribute('width', Math.max(800, maxX + 100).toString());
+        svg.setAttribute('height', Math.max(400, maxY + 100).toString());
+      }
+      
+      // 更新步骤列表
+      updateStepList() {
+        const list = document.getElementById('step-list');
+        const skillNodes = Array.from(this.nodes.values()).filter(n => n.type === 'skill');
+        
+        if (skillNodes.length === 0) {
+          list.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📊</div>
+              <p>等待工作流开始...</p>
+            </div>
+          `;
+          return;
+        }
+        
+        list.innerHTML = skillNodes.map(node => `
+          <div class="step-item ${this.selectedNodeId === node.id ? 'active' : ''}" onclick="viz.selectNode('${node.id}')">
+            <div class="step-icon ${node.status}">
+              ${node.status === 'success' ? '✓' : node.status === 'failed' ? '✗' : node.status === 'running' ? '⟳' : node.status === 'skipped' ? '⊘' : '○'}
+            </div>
+            <div class="step-info">
+              <div class="step-name">${node.name}</div>
+              <div class="step-duration">${this.formatDuration(node.duration) || (node.status === 'running' ? '进行中...' : '等待中')}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      // 选择节点
+      selectNode(nodeId) {
+        this.selectedNodeId = nodeId;
+        const node = this.nodes.get(nodeId);
+        
+        if (!node) return;
+        
+        document.getElementById('node-detail').classList.add('active');
+        document.getElementById('detail-name').textContent = node.name;
+        document.getElementById('detail-status').textContent = {
+          pending: '等待中',
+          running: '执行中',
+          success: '成功',
+          failed: '失败',
+          skipped: '已跳过'
+        }[node.status] || node.status;
+        
+        document.getElementById('detail-duration').textContent = this.formatDuration(node.duration) || '-';
+        document.getElementById('detail-input').textContent = node.input ? JSON.stringify(node.input, null, 2) : '-';
+        document.getElementById('detail-output').textContent = node.output ? JSON.stringify(node.output, null, 2) : '-';
+        
+        const errorSection = document.getElementById('error-section');
+        if (node.error) {
+          errorSection.style.display = 'block';
+          document.getElementById('detail-error').textContent = node.error;
+        } else {
+          errorSection.style.display = 'none';
+        }
+        
+        this.updateStepList();
+      }
+    }
+    
+    // 初始化
+    const viz = new VisualizationClient();
+  </script>
+</body>
+</html>

@@ -8,6 +8,7 @@ import { WorkflowParser } from './parser.js';
 import { WorkflowStateManager } from './state.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { QualityGate, type GateCheckpoint, type GateSummary } from './quality-gate.js';
+import { workflowObserver } from '../observer/workflow-observer.js';
 
 const logger = createLogger('WorkflowExecutor');
 
@@ -129,6 +130,10 @@ export class WorkflowExecutor {
 
     logger.info(`Starting workflow: ${workflow.name}`, { traceId: input.traceId });
 
+    // 通知可视化观察者 - 工作流开始
+    const stepNames = workflow.steps.map(s => s.skill);
+    workflowObserver.startWorkflow(input.traceId, workflow.name, stepNames);
+
     try {
       // 验证工作流
       const validation = this.parser.validate(workflow);
@@ -161,6 +166,9 @@ export class WorkflowExecutor {
           message: `开始执行: ${currentStepName}`,
           timestamp: Date.now(),
         });
+
+        // 通知可视化观察者 - 步骤开始
+        workflowObserver.stepStarted(input.traceId, stepIndex, currentStepName);
 
         logger.debug(`Executing workflow step: ${currentStepName}`);
 
@@ -218,6 +226,8 @@ export class WorkflowExecutor {
 
           // 处理结果
           if (result.code === 200) {
+            // 保存当前步骤名称用于通知
+            const completedStepName = currentStepName;
             // 成功，流转到下一步
             currentStepName = step.onSuccess ?? null;
             
@@ -236,6 +246,11 @@ export class WorkflowExecutor {
               message: result.message,
               timestamp: Date.now(),
             });
+
+            // 通知可视化观察者 - 步骤完成
+            if (completedStepName) {
+              workflowObserver.stepCompleted(input.traceId, stepIndex, completedStepName, result.data as Record<string, unknown>);
+            }
 
           } else if (result.code === 300) {
             // 需要用户交互，暂停
@@ -283,6 +298,9 @@ export class WorkflowExecutor {
               message: result.message,
               timestamp: Date.now(),
             });
+
+            // 通知可视化观察者 - 步骤失败
+            workflowObserver.stepFailed(input.traceId, stepIndex, currentStepName, result.message);
             
             currentStepName = step.onFail ?? null;
           } else {
@@ -313,6 +331,14 @@ export class WorkflowExecutor {
             timestamp: Date.now(),
           });
 
+          // 通知可视化观察者 - 步骤失败
+          workflowObserver.stepFailed(
+            input.traceId,
+            stepIndex,
+            currentStepName || 'unknown',
+            error instanceof Error ? error.message : String(error)
+          );
+
           // 尝试失败分支
           if (step.onFail) {
             currentStepName = step.onFail;
@@ -325,6 +351,9 @@ export class WorkflowExecutor {
       // 工作流完成
       execution.status = 'success';
       execution.endTime = Date.now();
+
+      // 通知可视化观察者 - 工作流完成
+      workflowObserver.completed(input.traceId, workflow.name, true);
 
       await this.saveState(execution);
 
@@ -359,6 +388,9 @@ export class WorkflowExecutor {
       execution.status = 'failed';
       execution.endTime = Date.now();
       execution.error = error instanceof Error ? error.message : String(error);
+
+      // 通知可视化观察者 - 工作流失败
+      workflowObserver.completed(input.traceId, workflow.name, false);
 
       await this.saveState(execution);
 
