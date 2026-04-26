@@ -121,11 +121,13 @@ export class VisualizationServer {
       return;
     }
 
-    // 关闭所有客户端
-    for (const [clientId, conn] of this.clients) {
+    // 先关闭所有 WebSocket 连接，再清空 Map
+    for (const conn of this.clients.values()) {
       conn.ws.close();
-      this.clients.delete(clientId);
     }
+
+    // 清空客户端映射
+    this.clients.clear();
 
     // 关闭服务器
     this.wss.close();
@@ -181,6 +183,12 @@ export class VisualizationServer {
 
   /**
    * 广播事件给所有订阅的客户端
+   *
+   * 广播规则：
+   * - 如果事件没有 traceId（系统级事件），发送给所有已连接客户端
+   * - 如果事件有 traceId：
+   *   - 无订阅的客户端收不到（静默忽略）
+   *   - 有订阅的客户端只有订阅了该 traceId 才能收到
    */
   private broadcastEvent(event: WorkflowVisualizationEvent): void {
     // 提取 traceId
@@ -188,22 +196,26 @@ export class VisualizationServer {
     if ('payload' in event && event.payload && typeof event.payload === 'object') {
       const payload = event.payload as Record<string, unknown>;
       traceId = payload.traceId as string | undefined;
-      if (!traceId && 'stepName' in payload) {
-        // 对于步骤事件，从当前活动中推断
-      }
     }
 
     for (const [, client] of this.clients) {
-      if (client.ws.readyState === WebSocket.OPEN) {
-        // 如果事件有 traceId，检查是否订阅
-        if (traceId && client.subscriptions.has(traceId)) {
-          client.ws.send(JSON.stringify(event));
-        } else if (!traceId || client.subscriptions.size === 0) {
-          // 发送给所有或无订阅限制的客户端
-          client.ws.send(JSON.stringify(event));
-        }
+      if (client.ws.readyState !== WebSocket.OPEN) {
+        continue;
+      }
+
+      // 如果事件没有 traceId，发送给所有已连接客户端
+      if (!traceId) {
+        client.ws.send(JSON.stringify(event));
+        client.lastActivity = Date.now();
+        continue;
+      }
+
+      // 如果事件有 traceId，只发给订阅了该 traceId 的客户端
+      if (client.subscriptions.has(traceId)) {
+        client.ws.send(JSON.stringify(event));
         client.lastActivity = Date.now();
       }
+      // 没订阅的客户端忽略此事件
     }
   }
 

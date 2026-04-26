@@ -341,11 +341,19 @@ export class WorkflowObserver extends EventEmitter {
     const nodes = Array.from(state.nodes.values());
     const edges = Array.from(state.edges.values());
 
-    // 找到当前步骤索引
+    // 找到当前步骤索引（skill 节点顺序，从 0 开始）
     let currentStepIndex = 0;
     if (state.currentStep) {
-      const nodeIndex = nodes.findIndex((n) => n.name === state.currentStep);
-      if (nodeIndex >= 0) currentStepIndex = nodeIndex;
+      let skillIndex = 0;
+      for (const node of state.nodes.values()) {
+        if (node.type === 'skill') {
+          if (node.name === state.currentStep) {
+            currentStepIndex = skillIndex;
+            break;
+          }
+          skillIndex++;
+        }
+      }
     }
 
     return {

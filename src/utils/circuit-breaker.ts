@@ -358,6 +358,16 @@ export class CircuitBreaker {
     logger.info(`Circuit breaker [${this.config.name}] force closed`);
     this.transitionTo(CircuitState.CLOSED);
   }
+
+  /**
+   * 清理资源（供外部调用，如注册表移除时）
+   */
+  cleanup(): void {
+    if (this.resetTimer) {
+      clearTimeout(this.resetTimer);
+      this.resetTimer = null;
+    }
+  }
 }
 
 // ========== 熔断器管理器 ==========
@@ -424,17 +434,13 @@ class CircuitBreakerRegistry {
     }
   }
 
-  /**
-   * 移除熔断器
-   */
+/**
+    * 移除熔断器
+    */
   remove(name: string): void {
     const circuit = this.circuits.get(name);
     if (circuit) {
-      // @ts-expect-error - reset is a method
-      if (circuit.resetTimer) {
-        // @ts-expect-error - clear timeout
-        clearTimeout(circuit.resetTimer);
-      }
+      circuit.cleanup();
       this.circuits.delete(name);
     }
   }
