@@ -405,6 +405,21 @@ Contributions are welcome! Please feel free to submit a Pull Request.
   - `UserTemplateManager`: 支持用户上传、注册、列出、删除自定义模板
   - 模板变量插值渲染
   - 与现有 TemplateManager 无缝集成
+- ✅ **Bug 修复**:
+  - `visualization-server`: 修复广播逻辑，无订阅客户端不再收到带 traceId 的事件
+  - `visualization-server`: 修复 stop() 遍历 Map 时同时删除导致的迭代器问题
+  - `circuit-breaker`: 新增 cleanup() 方法，消除 @ts-expect-error 类型hack
+  - `workflow-observer`: 修复 getSnapshot 中 currentStepIndex 返回错误索引的问题
+- ✅ **代码质量改进**:
+  - `user-template-manager`: 懒加载自动初始化，防止模板列表为空
+  - `enhanced-errors`: 每个错误码独立保留最近 10 条消息历史
+  - `user-template-manager`: 修复 incrementVersion patch 溢出问题
+  - `visualization-server`: stop() 时正确清理 workflowObserver 监听器
+  - `cache-manager`: 修复 setInterval 未清理的内存泄漏，新增 destroy() 方法
+  - `circuit-breaker`: 修复 timer 回调中状态已改变仍执行转换的问题
+  - `retry-strategy`: 修复 executeWithTimeout 的 Promise.race 竞态条件
+  - `workflow-observer`: clear() 时调用 removeAllListeners() 清理监听器
+  - 提取所有魔法数字为命名常量
 - ✅ **构建验证**: 95/95 测试通过，0 lint warnings
 
 ### v1.3.0 (2026-04-26)
