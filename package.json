@@ -1,7 +1,7 @@
 {
   "name": "forge",
-  "version": "1.2.1",
-  "description": "智能代码生成 MCP 插件 v1.2.1 - 需求闭环、Skill插件化、质量门禁、团队协作、OpenCode MCP 全面支持",
+  "version": "1.3.0",
+  "description": "智能代码生成 MCP 插件 v1.3.0 - 需求闭环、Skill插件化、质量门禁、团队协作、OpenCode MCP 全面支持",
   "main": "dist/index.js",
   "bin": {
     "fg": "dist/bin/cli.js"

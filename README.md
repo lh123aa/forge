@@ -388,6 +388,26 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📋 Changelog
 
+### v1.3.0 (2026-04-26)
+
+- ✅ **P0 安全增强**: 新增 SecurityAnalyzer 模块，集成 Semgrep 静态分析
+  - 支持 60+ 安全漏洞检测模式
+  - 涵盖: 代码注入、SQL注入、XSS、硬编码凭据、弱加密等
+  - Semgrep CLI 可用时自动使用，否则回退到正则检测
+  - 提供详细漏洞报告和修复建议
+- ✅ **P0 Skill 依赖管理**: 新增 SkillDependencyResolver 模块
+  - SkillMeta 支持 dependencies 声明
+  - 循环依赖检测
+  - 拓扑排序自动执行顺序规划
+  - 依赖链验证
+- ✅ **代码质量优化**: lint warnings 122 → 0
+- ✅ **新增工具模块**:
+  - `src/utils/security-analyzer.ts` - 安全分析模块
+  - `src/utils/skill-dependency-resolver.ts` - 依赖解析模块
+- ✅ **Skill 生命周期增强**: BaseSkill 支持 initialize/cleanup/validate 钩子
+- ✅ **DIContainer**: 新增依赖注入容器，支持单例/工厂模式
+- ✅ **构建验证**: 95/95 测试通过，0 lint warnings
+
 ### v1.2.1 (2026-04-25)
 
 - ✅ **OpenCode MCP 系统支持**: 全面升级 OpenCode MCP 集成，调试能力增强
