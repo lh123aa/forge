@@ -148,6 +148,8 @@ export interface ErrorStatistics {
   lastOccurrence: Date;
   /** 最近错误消息 */
   lastMessage: string;
+  /** 最近消息历史（每个错误码最多 10 条） */
+  recentMessages: Array<{ message: string; timestamp: Date }>;
   /** 是否正在重试 */
   isRetrying: boolean;
   /** 连续失败次数 */
@@ -377,6 +379,12 @@ class ErrorStatisticsRegistry {
       existing.lastOccurrence = new Date();
       existing.lastMessage = error.message;
       existing.consecutiveFailures++;
+
+      // 维护最近消息历史（每个错误码最多 10 条）
+      existing.recentMessages.unshift({ message: error.message, timestamp: new Date() });
+      if (existing.recentMessages.length > 10) {
+        existing.recentMessages.pop();
+      }
     } else {
       this.stats.set(key, {
         code: key,
@@ -385,12 +393,13 @@ class ErrorStatisticsRegistry {
         firstOccurrence: new Date(),
         lastOccurrence: new Date(),
         lastMessage: error.message,
+        recentMessages: [{ message: error.message, timestamp: new Date() }],
         isRetrying: false,
         consecutiveFailures: 1,
       });
     }
 
-    // 限制历史大小
+    // 限制总历史大小
     if (this.stats.size > this.maxHistory) {
       const oldestKey = this.findOldestKey();
       if (oldestKey) this.stats.delete(oldestKey);

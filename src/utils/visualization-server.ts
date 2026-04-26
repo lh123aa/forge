@@ -43,6 +43,7 @@ export class VisualizationServer {
   private clients: Map<string, ClientConnection> = new Map();
   private options: Required<VisualizationServerOptions>;
   private started = false;
+  private workflowEventListener: ((event: WorkflowVisualizationEvent) => void) | null = null;
 
   constructor(options: VisualizationServerOptions = {}) {
     this.options = {
@@ -101,9 +102,10 @@ export class VisualizationServer {
       });
 
       // 监听工作流事件
-      workflowObserver.on('event', (event: WorkflowVisualizationEvent) => {
+      this.workflowEventListener = (event: WorkflowVisualizationEvent) => {
         this.broadcastEvent(event);
-      });
+      };
+      workflowObserver.on('event', this.workflowEventListener);
 
       this.started = true;
       logger.info(`VisualizationServer started on port ${this.options.port}`);
@@ -119,6 +121,12 @@ export class VisualizationServer {
   stop(): void {
     if (!this.started || !this.wss) {
       return;
+    }
+
+    // 移除工作流事件监听器
+    if (this.workflowEventListener) {
+      workflowObserver.off('event', this.workflowEventListener);
+      this.workflowEventListener = null;
     }
 
     // 先关闭所有 WebSocket 连接，再清空 Map

@@ -251,8 +251,14 @@ export class UserTemplateManager {
         return `${major + 1}.0.0`;
       case 'minor':
         return `${major}.${minor + 1}.0`;
-      case 'patch':
-        return `${major}.${minor}.${patch + 1}`;
+      case 'patch': {
+        const newPatch = patch + 1;
+        // patch 超过 99 时自动溢出到 minor
+        if (newPatch > 99) {
+          return `${major}.${minor + 1}.0`;
+        }
+        return `${major}.${minor}.${newPatch}`;
+      }
     }
   }
 
@@ -785,12 +791,36 @@ export class UserTemplateManager {
   }
 }
 
-// 导出单例
+// 导出单例（懒加载自动初始化）
 let userTemplateManager: UserTemplateManager | null = null;
+let initialized = false;
 
-export function getUserTemplateManager(): UserTemplateManager {
+export async function getUserTemplateManager(): Promise<UserTemplateManager> {
   if (!userTemplateManager) {
     userTemplateManager = new UserTemplateManager();
+  }
+
+  // 首次访问时自动初始化
+  if (!initialized) {
+    initialized = true;
+    try {
+      await userTemplateManager.initialize();
+    } catch (error) {
+      initialized = false;
+      logger.error('Failed to initialize UserTemplateManager', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  return userTemplateManager;
+}
+
+// 同步版本（需确保已初始化，适用于初始化后同步访问场景）
+export function getUserTemplateManagerSync(): UserTemplateManager {
+  if (!userTemplateManager || !initialized) {
+    throw new Error('UserTemplateManager not initialized. Use await getUserTemplateManager() first.');
   }
   return userTemplateManager;
 }
